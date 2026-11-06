@@ -1,0 +1,2164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ficha de Busca Ativa e Escuta Qualificada</title>
+<meta name="description" content="Instrumental digital das equipes volantes — Vigilância Socioassistencial, SEMAS Oriximiná/PA. Funciona sem internet.">
+<meta name="theme-color" content="#073B30">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Busca Ativa">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style>
+</head>
+<body>
+<!--
+  ============================================================================
+  FICHA DE BUSCA ATIVA E ESCUTA QUALIFICADA — v3.2
+  Vigilância Socioassistencial · SEMAS Oriximiná/PA
+  Revisão baseada no Parecer Técnico de 25/08/2026 (comparação com o
+  Prontuário SUAS oficial). Principais mudanças em relação à v2.0:
+    • Resultado da visita (tentativa sem sucesso agora é registrável)
+    • Consentimento LGPD no início da coleta
+    • Família sem CadÚnico tem fluxo próprio
+    • Documentação civil pendente por membro
+    • Composição familiar estruturada (data nasc., sexo, parentesco, renda)
+    • Renda per capita calculada automaticamente
+    • Gestação, deficiência e cuidador em campos condicionais
+    • Privação de liberdade / medida socioeducativa / guarda de terceiros
+    • Trajetória de rua, tráfico de pessoas, ameaça no território, rede de apoio
+    • Povo/etnia indígena especificado
+    • Identificador único do atendimento
+    • Múltiplas fichas salvas no aparelho (autosave em localStorage)
+    • Validação mínima antes de finalizar
+    • Alerta destacado para situações de notificação compulsória
+
+  PARÂMETROS A REVISAR ANUALMENTE (procure "CONFIG" no script):
+    LINHA_POBREZA — linha de pobreza per capita do Programa Bolsa Família
+
+  v3.5 (nov/2026): aplicativo instalável no Android e no iPhone (PWA) —
+    manifest, ícones, service worker com funcionamento 100% offline, botão
+    "Instalar app" (Android) e passo a passo do Safari (iPhone), aviso de
+    nova versão, selo "Sem internet" e armazenamento persistente das fichas.
+
+  v3.4 (set/2026): seletor de foto trocado para preservar as coordenadas no
+    Android (a Galeria/Fotos remove o local; o app Arquivos preserva); botão de
+    diagnóstico de um toque com relatório copiável; suporte a modo aplicativo
+    (PWA) com cache offline quando hospedada em site próprio.
+
+  v3.3 (ago/2026): botão “Abrir a ficha em tela cheia” quando dentro de um
+    visualizador — leva a ficha para uma aba própria do navegador, onde o pedido
+    de permissão de localização aparece normalmente (com fallback de copiar o
+    endereço se a nova aba for bloqueada).
+
+  v3.2 (ago/2026): localização com quatro caminhos independentes — GPS do
+    navegador com pré-diagnóstico de permissão e detecção de visualizador que
+    bloqueia; extração de coordenadas do EXIF de foto (offline, sem permissão);
+    colar do Google Maps; digitação manual. O método usado vai no JSON
+    (geo.metodo_captura).
+
+  v3.1 (revisão de campo, ago/2026):
+    • GPS reescrito para celular: leitura contínua (watchPosition) que melhora a
+      precisão sozinha, com parada automática em ±30 m ou 30 s
+    • Diagnóstico claro quando o navegador bloqueia o GPS (arquivo aberto direto
+      do WhatsApp/gerenciador = contexto inseguro) ou quando a permissão é negada
+    • Painel "GPS não funcionou no celular?" com o passo a passo de preparação
+      do aparelho (Android/iPhone)
+    • Colar coordenadas do Google Maps em um campo separa lat/lng sozinho
+  ============================================================================
+-->
+<style>
+:root{
+  --verde-rio:#0C5B4A;
+  --verde-escuro:#073B30;
+  --verde-claro:#E3EFEA;
+  --areia:#F2F4F1;
+  --barro:#B45309;
+  --barro-claro:#FDF3E7;
+  --alerta:#B91C1C;
+  --alerta-claro:#FDECEC;
+  --ink:#1A2421;
+  --ink-soft:#5A6661;
+  --linha:#D7DEDA;
+  --branco:#FFFFFF;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--areia);color:var(--ink);font-size:16px;line-height:1.45;
+  padding-bottom:120px;
+}
+/* ---------- Cabeçalho ---------- */
+header.topo{
+  background:linear-gradient(160deg,var(--verde-escuro) 0%,var(--verde-rio) 100%);
+  color:#fff;padding:22px 18px 14px;
+}
+.topo .orgao{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:600}
+.topo h1{font-size:21px;font-weight:800;line-height:1.2;margin-top:6px}
+.topo .sub{font-size:12.5px;opacity:.85;margin-top:6px}
+.topo .toolbar{
+  display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;
+}
+.id-plate{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+  border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;
+  font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;letter-spacing:.03em;
+}
+.btn-topo{
+  background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.3);
+  border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer;
+  font-family:inherit;
+}
+.btn-topo .cont{background:#fff;color:var(--verde-escuro);border-radius:99px;
+  padding:0 6px;font-size:11px;margin-left:4px}
+/* ---------- Barra de prioridade (fixa) ---------- */
+.prioridade-bar{
+  position:sticky;top:0;z-index:50;background:var(--branco);
+  border-bottom:1px solid var(--linha);
+  padding:10px 14px;
+}
+.prio-linha{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.prio-chip{
+  font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+  padding:7px 14px;border-radius:999px;white-space:nowrap;transition:all .25s;
+}
+.prio-padrao{background:var(--verde-claro);color:var(--verde-escuro)}
+.prio-media{background:var(--barro-claro);color:var(--barro)}
+.prio-alta{background:var(--alerta-claro);color:var(--alerta);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(185,28,28,.25)}50%{box-shadow:0 0 0 7px rgba(185,28,28,0)}}
+.prio-info{font-size:12px;color:var(--ink-soft);text-align:right}
+.banner-comp{
+  display:none;margin-top:9px;background:var(--alerta);color:#fff;border-radius:10px;
+  padding:10px 13px;font-size:13px;font-weight:700;line-height:1.4;
+}
+.banner-comp.mostra{display:block}
+/* ---------- Blocos ---------- */
+main{max-width:680px;margin:0 auto;padding:14px}
+details.bloco{
+  background:var(--branco);border:1px solid var(--linha);border-radius:var(--radius);
+  margin-bottom:14px;overflow:hidden;
+}
+details.bloco[open]{box-shadow:0 2px 10px rgba(7,59,48,.06)}
+summary.bloco-titulo{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;
+  padding:15px 16px;user-select:none;
+}
+summary.bloco-titulo::-webkit-details-marker{display:none}
+.bloco-num{
+  min-width:38px;height:38px;border-radius:10px;background:var(--verde-rio);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;
+  flex-shrink:0;
+}
+.bloco-num.novo{background:var(--barro)}
+.bloco-head h2{font-size:15.5px;font-weight:800;line-height:1.25}
+.bloco-head .hint{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.seta{margin-left:auto;color:var(--ink-soft);transition:transform .2s;flex-shrink:0}
+details[open] .seta{transform:rotate(180deg)}
+.bloco-corpo{padding:4px 16px 18px;border-top:1px solid var(--linha)}
+body.modo-tentativa details.bloco.cond{display:none}
+/* ---------- Campos ---------- */
+.campo{margin-top:16px}
+.campo label.rotulo, .grupo-rotulo{
+  display:block;font-size:13px;font-weight:700;color:var(--verde-escuro);
+  margin-bottom:7px;letter-spacing:.01em;
+}
+.grupo-rotulo .sub-rotulo{font-weight:400;color:var(--ink-soft);font-size:12px}
+input[type=text],input[type=tel],input[type=number],input[type=date],input[type=datetime-local],textarea,select{
+  width:100%;padding:12px 13px;border:1.5px solid var(--linha);border-radius:10px;
+  font-size:16px;font-family:inherit;background:#FBFCFB;color:var(--ink);
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--verde-rio);background:#fff}
+textarea{min-height:96px;resize:vertical}
+.linha2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:420px){.linha2{grid-template-columns:1fr}}
+.hidden{display:none!important}
+/* Opções tocáveis */
+.opcoes{display:flex;flex-direction:column;gap:8px}
+.opcoes.horizontal{flex-direction:row;flex-wrap:wrap}
+.opt{
+  display:flex;align-items:flex-start;gap:10px;padding:11px 13px;
+  border:1.5px solid var(--linha);border-radius:10px;background:#FBFCFB;
+  cursor:pointer;font-size:14.5px;transition:all .15s;
+}
+.opt input{width:20px;height:20px;flex-shrink:0;accent-color:var(--verde-rio);margin-top:1px}
+.opt:has(input:checked){border-color:var(--verde-rio);background:var(--verde-claro)}
+.opt.alerta-opt:has(input:checked){border-color:var(--alerta);background:var(--alerta-claro);font-weight:700}
+.opt.atencao-opt:has(input:checked){border-color:var(--barro);background:var(--barro-claro)}
+.opt .tag-grave{display:inline-block;background:var(--alerta);color:#fff;font-size:10.5px;font-weight:800;
+  letter-spacing:.06em;padding:2px 7px;border-radius:5px;margin-right:6px;vertical-align:1px}
+.opt .tag-comp{display:inline-block;background:#7C2D12;color:#fff;font-size:10.5px;font-weight:800;
+  letter-spacing:.06em;padding:2px 7px;border-radius:5px;margin-right:6px;vertical-align:1px}
+/* Painéis condicionais */
+.painel-cond{
+  border:1.5px dashed var(--linha);border-left:4px solid var(--verde-rio);
+  border-radius:10px;padding:4px 14px 14px;margin-top:10px;background:#FBFCFB;
+}
+.painel-cond.laranja{border-left-color:var(--barro)}
+/* ---------- GPS / placas ---------- */
+.gps-plate{
+  background:var(--verde-escuro);color:#fff;border-radius:12px;padding:16px;margin-top:14px;
+}
+.gps-plate .gps-titulo{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;font-weight:700}
+.gps-coords{
+  font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-size:17px;font-weight:600;margin-top:8px;line-height:1.5;word-break:break-all;
+}
+.gps-meta{font-size:12px;opacity:.75;margin-top:6px}
+.calc-plate{
+  background:var(--verde-claro);border:1.5px solid var(--verde-rio);border-radius:12px;
+  padding:14px 16px;margin-top:14px;
+}
+.calc-plate .calc-titulo{font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--verde-escuro);font-weight:800}
+.calc-plate .calc-valor{font-size:22px;font-weight:800;color:var(--verde-escuro);margin-top:4px}
+.calc-plate .calc-det{font-size:12.5px;color:var(--ink-soft);margin-top:4px;line-height:1.4}
+.calc-plate.alertando{background:var(--alerta-claro);border-color:var(--alerta)}
+.calc-plate.alertando .calc-valor,.calc-plate.alertando .calc-titulo{color:var(--alerta)}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px;border:none;border-radius:11px;font-size:15.5px;font-weight:800;
+  font-family:inherit;cursor:pointer;transition:transform .1s;
+}
+.btn:active{transform:scale(.98)}
+.btn-gps{background:var(--barro);color:#fff;margin-top:12px}
+.btn-secundario{background:var(--verde-claro);color:var(--verde-escuro);margin-top:10px}
+.btn-primario{background:var(--verde-rio);color:#fff}
+.btn-fantasma{background:transparent;color:var(--ink-soft);border:1.5px dashed var(--linha)}
+.btn-alerta{background:var(--alerta);color:#fff}
+/* ---------- Membros da família ---------- */
+.membro{
+  border:1.5px solid var(--linha);border-radius:12px;padding:13px;margin-top:16px;
+  background:#FBFCFB;position:relative;
+}
+.membro .membro-num{
+  position:absolute;top:-9px;left:12px;background:var(--verde-rio);color:#fff;
+  font-size:11px;font-weight:800;padding:2px 9px;border-radius:6px;
+}
+.membro .idade-badge{
+  position:absolute;top:-9px;left:96px;background:var(--barro);color:#fff;
+  font-size:11px;font-weight:800;padding:2px 9px;border-radius:6px;display:none;
+}
+.membro .remover{
+  position:absolute;top:-9px;right:12px;background:#fff;color:var(--alerta);
+  border:1.5px solid var(--alerta);font-size:11px;font-weight:800;padding:2px 9px;
+  border-radius:6px;cursor:pointer;font-family:inherit;
+}
+.membro .campo{margin-top:10px}
+.doc-linha{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.doc-chip{
+  display:flex;align-items:center;gap:6px;border:1.5px solid var(--linha);
+  border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;background:#fff;
+}
+.doc-chip input{width:16px;height:16px;accent-color:var(--barro)}
+.doc-chip:has(input:checked){border-color:var(--barro);background:var(--barro-claro);font-weight:700}
+/* ---------- Rodapé de ações ---------- */
+.acoes-fixas{
+  position:fixed;bottom:0;left:0;right:0;z-index:60;
+  background:rgba(255,255,255,.96);backdrop-filter:blur(8px);
+  border-top:1px solid var(--linha);padding:10px 14px;
+  display:flex;gap:10px;max-width:100%;
+}
+.acoes-fixas .btn{margin-top:0;padding:13px 10px;font-size:14px}
+/* ---------- Modais ---------- */
+.modal-fundo{position:fixed;inset:0;background:rgba(7,59,48,.55);z-index:100;display:none;
+  align-items:flex-end;justify-content:center}
+.modal-fundo.aberto{display:flex}
+.modal{
+  background:#fff;width:100%;max-width:680px;max-height:88vh;border-radius:18px 18px 0 0;
+  padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;
+}
+.modal h3{font-size:17px;font-weight:800;color:var(--verde-escuro)}
+.modal textarea{flex:1;min-height:240px;font-size:13px;font-family:ui-monospace,Menlo,monospace}
+.modal .fechar{align-self:flex-end;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-soft)}
+.ficha-item{
+  border:1.5px solid var(--linha);border-radius:10px;padding:12px;display:flex;
+  align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;
+}
+.ficha-item .fi-info{flex:1;min-width:180px}
+.ficha-item .fi-nome{font-weight:800;font-size:14.5px}
+.ficha-item .fi-meta{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.ficha-item .fi-acoes{display:flex;gap:6px}
+.ficha-item button{
+  border:none;border-radius:8px;padding:8px 12px;font-weight:800;font-size:12.5px;
+  cursor:pointer;font-family:inherit;
+}
+.fi-abrir{background:var(--verde-rio);color:#fff}
+.fi-excluir{background:#fff;color:var(--alerta);border:1.5px solid var(--alerta)!important}
+.aviso{
+  font-size:12.5px;color:var(--ink-soft);background:var(--verde-claro);
+  border-radius:9px;padding:10px 12px;margin-top:12px;
+}
+.aviso.laranja{background:var(--barro-claro);color:var(--barro)}
+.aviso.vermelho{background:var(--alerta-claro);color:var(--alerta);font-weight:700}
+.rodape-doc{max-width:680px;margin:6px auto 0;padding:0 16px;font-size:11.5px;color:var(--ink-soft);text-align:center}
+.toast{
+  position:fixed;bottom:88px;left:50%;transform:translateX(-50%);
+  background:var(--verde-escuro);color:#fff;padding:11px 20px;border-radius:999px;
+  font-size:14px;font-weight:700;z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;
+  max-width:90%;text-align:center;
+}
+.toast.mostra{opacity:1}
+/* ---------- Modo aplicativo (v3.5) ---------- */
+header.topo{padding-top:calc(22px + env(safe-area-inset-top))}
+.acoes-fixas{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+.btn-instalar{background:#fff;color:var(--verde-escuro);border-color:#fff}
+.selo-offline{
+  background:var(--barro);color:#fff;border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;
+}
+.passos-ios{margin:4px 0 0 20px;font-size:14.5px;line-height:1.6}
+.passos-ios li{margin-top:6px}
+.icone-ios{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+  border:1.5px solid var(--linha);border-radius:7px;vertical-align:middle;background:#fff}
+.faixa-atualizar{
+  position:fixed;top:0;left:0;right:0;z-index:150;background:var(--barro);color:#fff;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;gap:10px;align-items:center;
+  justify-content:center;font-size:14px;font-weight:700;
+}
+.faixa-atualizar button{background:#fff;color:var(--barro);border:none;border-radius:8px;
+  padding:7px 12px;font-weight:800;font-family:inherit;font-size:13px;cursor:pointer}
+.hint-dinamico{font-size:12.5px;color:var(--barro);font-weight:700;margin-top:6px}
+details.ajuda-gps{margin-top:12px;border:1.5px dashed var(--barro);border-radius:10px;background:var(--barro-claro)}
+details.ajuda-gps summary{padding:11px 13px;font-size:13.5px;font-weight:700;color:var(--barro);cursor:pointer;list-style:none;user-select:none}
+details.ajuda-gps summary::-webkit-details-marker{display:none}
+.ajuda-corpo{padding:0 14px 13px;font-size:13px;color:var(--ink);line-height:1.5}
+.ajuda-corpo p{margin-top:8px}
+.ajuda-corpo ol{margin:6px 0 0 20px}
+.ajuda-corpo li{margin-top:4px}
+.ajuda-corpo code{background:#fff;border:1px solid var(--linha);border-radius:6px;padding:1px 5px;font-size:12px;word-break:break-all}
+@media print{
+  .acoes-fixas,.prioridade-bar,.topo .toolbar,.btn{display:none!important}
+  details.bloco{page-break-inside:avoid}
+  body{padding-bottom:0;background:#fff}
+}
+</style>
+
+<header class="topo">
+  <div class="orgao">Prefeitura de Oriximiná · SEMAS · Departamento de Vigilância Socioassistencial</div>
+  <h1>Ficha de Busca Ativa e Escuta Qualificada</h1>
+  <div class="sub">Instrumental digital das equipes volantes · Versão 3.5 · Territórios ribeirinhos, quilombolas, indígenas e urbanos</div>
+  <div class="toolbar">
+    <span class="id-plate" id="idPlate">ID: —</span>
+    <button type="button" class="btn-topo" id="btnNova">＋ Nova ficha</button>
+    <button type="button" class="btn-topo" id="btnFichas">🗂 Fichas salvas<span class="cont" id="contFichas">0</span></button>
+    <button type="button" class="btn-topo btn-instalar hidden" id="btnInstalar">📲 Instalar app</button>
+    <span class="selo-offline hidden" id="seloOffline">📴 Sem internet — tudo salvo no aparelho</span>
+  </div>
+</header>
+
+<div class="prioridade-bar">
+  <div class="prio-linha">
+    <span class="prio-chip prio-padrao" id="prioChip">Prioridade: padrão</span>
+    <span class="prio-info" id="prioInfo">Nenhum alerta marcado</span>
+  </div>
+  <div class="banner-comp" id="bannerComp">
+    🚨 NOTIFICAÇÃO COMPULSÓRIA — a situação marcada exige comunicação imediata à coordenação e aos órgãos do Sistema de Garantia de Direitos (Conselho Tutelar / CREAS) no retorno da expedição — ou por rádio/telefone, se disponível. Não discuta a suspeita na frente da família ou de vizinhos.
+  </div>
+</div>
+
+<main>
+
+<!-- ================= BLOCO 0 — VISITA E GEORREFERENCIAMENTO ================= -->
+<details class="bloco" open>
+  <summary class="bloco-titulo">
+    <span class="bloco-num novo">0</span>
+    <span class="bloco-head">
+      <h2>Registro da Visita e Georreferenciamento</h2>
+      <span class="hint">Resultado da visita, consentimento e localização</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+
+    <div class="campo linha2">
+      <div>
+        <label class="rotulo" for="dataVisita">Data e hora da visita</label>
+        <input type="datetime-local" id="dataVisita">
+      </div>
+      <div>
+        <label class="rotulo" for="equipe">Equipe volante / Nº da expedição</label>
+        <input type="text" id="equipe" placeholder="Ex.: Equipe Volante 02 — Trombetas">
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">Resultado da visita <span class="sub-rotulo">(obrigatório — define o restante da ficha)</span></span>
+      <div class="opcoes">
+        <label class="opt"><input type="radio" name="resultadoVisita" value="Atendimento realizado"> Atendimento realizado — família ouvida</label>
+        <label class="opt atencao-opt"><input type="radio" name="resultadoVisita" value="Família ausente"> Família ausente no momento da visita</label>
+        <label class="opt atencao-opt"><input type="radio" name="resultadoVisita" value="Endereço não localizado"> Endereço/comunidade não localizado</label>
+        <label class="opt atencao-opt"><input type="radio" name="resultadoVisita" value="Recusa de atendimento"> Família recusou o atendimento</label>
+        <label class="opt atencao-opt"><input type="radio" name="resultadoVisita" value="Família mudou-se"> Família mudou-se do endereço</label>
+        <label class="opt atencao-opt"><input type="radio" name="resultadoVisita" value="Outro"> Outro (descrever no registro da tentativa)</label>
+      </div>
+    </div>
+
+    <!-- Painel de tentativa sem sucesso -->
+    <div class="painel-cond laranja hidden" id="painelTentativa">
+      <div class="campo">
+        <label class="rotulo" for="tentativaInfo">Registro da tentativa — o que foi possível apurar</label>
+        <textarea id="tentativaInfo" placeholder="Ex.: vizinha informou que a família está no roçado e retorna à tarde; casa aparenta habitada; liderança comunitária sugeriu procurar no fim do dia..."></textarea>
+      </div>
+      <div class="campo">
+        <span class="grupo-rotulo">Recomenda nova tentativa?</span>
+        <div class="opcoes horizontal">
+          <label class="opt"><input type="radio" name="novaTentativa" value="Sim"> Sim</label>
+          <label class="opt"><input type="radio" name="novaTentativa" value="Não"> Não</label>
+        </div>
+      </div>
+      <div class="campo">
+        <label class="rotulo" for="tentativaQuando">Quando / em que condição tentar de novo</label>
+        <input type="text" id="tentativaQuando" placeholder="Ex.: nesta mesma expedição, no fim do dia / próxima expedição, período da manhã">
+      </div>
+      <div class="aviso laranja">ℹ️ Como o atendimento não foi realizado, apenas este bloco e o Bloco 8 (técnico responsável) precisam ser preenchidos. Capture o GPS mesmo assim — a localização da tentativa é dado de vigilância.</div>
+    </div>
+
+    <!-- Consentimento -->
+    <div class="campo hidden" id="campoConsent">
+      <span class="grupo-rotulo">Consentimento da família <span class="sub-rotulo">(registrar no início da escuta — LGPD)</span></span>
+      <div class="opcoes">
+        <label class="opt"><input type="radio" name="consentimento" value="Consentiu"> A família foi informada da finalidade da coleta (acesso a direitos e serviços do SUAS) e consentiu verbalmente</label>
+        <label class="opt atencao-opt"><input type="radio" name="consentimento" value="Recusou"> A família recusou o registro das informações</label>
+      </div>
+      <div class="aviso vermelho hidden" id="avisoRecusa">⚠️ Com a recusa, registre apenas os dados mínimos de identificação e o motivo. Respeite a decisão da família e avalie nova abordagem em outra visita, preferencialmente com mediação de liderança comunitária.</div>
+    </div>
+
+    <div class="gps-plate">
+      <div class="gps-titulo">Coordenadas da residência</div>
+      <div class="gps-coords" id="gpsCoords">— aguardando captura —</div>
+      <div class="gps-meta" id="gpsMeta">Toque no botão abaixo com o GPS do celular ligado. Funciona sem internet.</div>
+    </div>
+    <button type="button" class="btn btn-primario hidden" id="btnTelaCheia">🔓 Abrir a ficha em tela cheia — libera o pedido de localização</button>
+    <button type="button" class="btn btn-gps" id="btnGps">📍 Capturar localização GPS</button>
+    <button type="button" class="btn btn-secundario" id="btnFoto">📷 Extrair localização de uma foto</button>
+    <input type="file" id="fotoGps" class="hidden">
+    <div class="aviso" style="margin-top:8px">📷 Alternativa: tire uma foto da residência com a câmera (com “Salvar local” ativado), toque no botão acima e escolha a foto pelo app <strong>Arquivos</strong>, na pasta <strong>DCIM › Camera</strong>. Importante no Android: escolher pela <strong>Galeria/Fotos remove as coordenadas</strong> da imagem — use o caminho Arquivos. A foto não é enviada nem guardada.</div>
+    <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="precisao"><input type="hidden" id="gpsHora">
+
+    <div class="campo linha2">
+      <div>
+        <label class="rotulo" for="latManual">Latitude (manual, se necessário)</label>
+        <input type="text" id="latManual" inputmode="decimal" placeholder="-1.76528">
+      </div>
+      <div>
+        <label class="rotulo" for="lngManual">Longitude (manual, se necessário)</label>
+        <input type="text" id="lngManual" inputmode="decimal" placeholder="-55.86611">
+      </div>
+    </div>
+    <div class="aviso" style="margin-top:8px">💡 Dica: copie as coordenadas no Google Maps (toque e segure no ponto da casa) e cole no campo de latitude — a ficha separa os dois valores sozinha.</div>
+
+    <details class="ajuda-gps" id="ajudaGps">
+      <summary>📱 GPS não funcionou no celular? Toque aqui</summary>
+      <div class="ajuda-corpo">
+        <div id="ajudaArquivo">
+          <p><strong>Causa mais comum:</strong> o arquivo foi aberto “direto” do WhatsApp, do e-mail ou do app de Arquivos. Nesse modo, o navegador bloqueia o GPS por segurança — mesmo com a localização do aparelho ligada e a permissão concedida.</p>
+          <p><strong>Como resolver no Android:</strong></p>
+          <ol>
+            <li>Salve o arquivo na pasta <strong>Download</strong> do aparelho;</li>
+            <li>Abra o <strong>Chrome</strong> e digite na barra de endereço:<br><code>file:///sdcard/Download/ficha_busca_ativa_v3.html</code></li>
+            <li>Toque em ⋮ → <strong>Adicionar à tela inicial</strong>, para abrir sempre por esse atalho;</li>
+            <li>No primeiro uso do GPS, toque em <strong>Permitir</strong> quando o Chrome pedir a localização.</li>
+          </ol>
+          <p><strong>No iPhone</strong> (e como alternativa geral): use a versão publicada da ficha — um link fixo aberto no navegador, pelo qual o GPS funciona direto. Peça o endereço à Vigilância Socioassistencial.</p>
+          <p><strong>Checagens rápidas:</strong> localização do aparelho LIGADA (modo alta precisão) · permissão de localização concedida ao navegador (Configurações → Apps → Chrome → Permissões) · testar ao ar livre, longe de cobertura.</p>
+        </div>
+        <div id="ajudaLink" class="hidden">
+          <p><strong>Você está na versão publicada.</strong> Se o pedido de permissão de localização nem chega a aparecer, a ficha está dentro de um visualizador: toque em <strong>“🔓 Abrir a ficha em tela cheia”</strong> (aparece acima do botão de GPS) e continue na aba do navegador. Depois, confira nesta ordem:</p>
+          <ol>
+            <li>Quando o navegador perguntar, toque em <strong>Permitir</strong> o acesso à localização;</li>
+            <li>Se negou sem querer: toque no <strong>cadeado</strong> na barra de endereço → Permissões → Localização → Permitir, e recarregue;</li>
+            <li>Localização do aparelho <strong>LIGADA</strong>, em modo alta precisão (Configurações → Localização);</li>
+            <li>Teste ao ar livre, longe de cobertura — dentro de casa o sinal dos satélites cai muito.</li>
+          </ol>
+          <p><strong>Para a expedição:</strong> abra este link ainda na sede, com internet, e <strong>mantenha a aba aberta</strong> — a ficha continua funcionando sem sinal. Use ⋮ → <strong>Adicionar à tela inicial</strong> para reabrir com um toque. Em áreas longas sem sinal, leve também o arquivo salvo no aparelho como reserva.</p>
+        </div>
+        <p><strong>Método que funciona em qualquer aparelho:</strong> 📷 tire uma foto da residência com a câmera do celular (com “Salvar local” ativado nas configurações da câmera) e use o botão “Extrair localização de uma foto” — a ficha lê as coordenadas gravadas na imagem, sem depender de nenhuma permissão do navegador. A foto não é enviada nem guardada.</p>
+        <p><strong>Última alternativa:</strong> no Google Maps (funciona offline com a área baixada), toque e segure no ponto da casa, copie as coordenadas e cole no campo “Latitude” acima.</p>
+        <p><strong>Nada resolveu?</strong> Rode o diagnóstico abaixo e envie o texto copiado à Vigilância — ele mostra exatamente o que está bloqueando neste aparelho.</p>
+        <button type="button" class="btn btn-secundario" id="btnDiag">🩺 Executar diagnóstico e copiar o resultado</button>
+        <textarea id="diagTexto" readonly class="hidden" style="margin-top:8px;min-height:150px;font-size:12px;font-family:ui-monospace,Menlo,monospace"></textarea>
+      </div>
+    </details>
+
+    <div class="campo">
+      <span class="grupo-rotulo">Tipo de acesso à localidade</span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="radio" name="acesso" value="Fluvial"> Fluvial</label>
+        <label class="opt"><input type="radio" name="acesso" value="Terrestre"> Terrestre</label>
+        <label class="opt"><input type="radio" name="acesso" value="Misto"> Misto</label>
+      </div>
+    </div>
+
+    <div class="campo linha2">
+      <div>
+        <label class="rotulo" for="tempoDesloc">Tempo de deslocamento desde a sede</label>
+        <input type="text" id="tempoDesloc" placeholder="Ex.: 6 horas de voadeira">
+      </div>
+      <div>
+        <label class="rotulo" for="pontoRef">Ponto de referência local</label>
+        <input type="text" id="pontoRef" placeholder="Ex.: ao lado da escola municipal">
+      </div>
+    </div>
+
+    <div class="campo">
+      <label class="rotulo" for="condAcesso">Condições de acesso no dia da visita</label>
+      <input type="text" id="condAcesso" placeholder="Ex.: rio cheio, igarapé navegável / estrada com atoleiro">
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 1 — IDENTIFICAÇÃO ================= -->
+<details class="bloco cond" open>
+  <summary class="bloco-titulo">
+    <span class="bloco-num">1</span>
+    <span class="bloco-head">
+      <h2>Identificação da Família</h2>
+      <span class="hint">Dados do CECAD (quando houver) e situação cadastral</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+
+    <div class="campo">
+      <span class="grupo-rotulo">A família possui cadastro no CadÚnico?</span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="radio" name="possuiCad" value="Sim"> Sim</label>
+        <label class="opt atencao-opt"><input type="radio" name="possuiCad" value="Não"> Não</label>
+        <label class="opt"><input type="radio" name="possuiCad" value="Não sabe"> Não sabe</label>
+      </div>
+      <div class="aviso laranja hidden" id="avisoSemCad">📌 Família sem CadÚnico identificada em busca ativa: os campos de Código Familiar e NIS podem ficar em branco. O encaminhamento "Inclusão no CadÚnico" foi marcado automaticamente no Bloco 7 — colete o máximo de dados de composição e documentação para agilizar o cadastramento.</div>
+    </div>
+
+    <div class="campo linha2" id="linhaCod">
+      <div>
+        <label class="rotulo" for="codFamiliar">Código Familiar (CadÚnico)</label>
+        <input type="text" id="codFamiliar" inputmode="numeric">
+      </div>
+      <div>
+        <label class="rotulo" for="nis">NIS da pessoa de referência</label>
+        <input type="text" id="nis" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="campo">
+      <label class="rotulo" for="nomeRef">Nome da pessoa de referência</label>
+      <input type="text" id="nomeRef">
+      <label class="opt" style="margin-top:8px"><input type="checkbox" id="naoIdent"> Não foi possível identificar a pessoa de referência nesta visita</label>
+    </div>
+
+    <div class="campo linha2">
+      <div>
+        <label class="rotulo" for="apelido">Apelido / como é conhecida na comunidade</label>
+        <input type="text" id="apelido">
+      </div>
+      <div>
+        <label class="rotulo" for="telefone">Telefone</label>
+        <input type="tel" id="telefone" placeholder="(93) 9 ....-....">
+      </div>
+    </div>
+
+    <div class="campo linha2">
+      <div>
+        <label class="rotulo" for="dataCad">Última atualização no CadÚnico</label>
+        <input type="date" id="dataCad">
+      </div>
+      <div>
+        <label class="rotulo" for="rendaSistema">Renda registrada no sistema (R$)</label>
+        <input type="number" id="rendaSistema" inputmode="decimal" step="0.01" placeholder="0,00">
+      </div>
+    </div>
+
+    <div class="campo">
+      <label class="rotulo" for="endereco">Endereço completo / Comunidade</label>
+      <input type="text" id="endereco" placeholder="Ex.: Comunidade Boa Vista">
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">Território de referência</span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="radio" name="territorio" value="Rio Trombetas"> Rio Trombetas</label>
+        <label class="opt"><input type="radio" name="territorio" value="Rio Nhamundá"> Rio Nhamundá</label>
+        <label class="opt"><input type="radio" name="territorio" value="Rio Amazonas / Várzea"> Rio Amazonas / Várzea</label>
+        <label class="opt"><input type="radio" name="territorio" value="Zona urbana"> Zona urbana</label>
+        <label class="opt"><input type="radio" name="territorio" value="Outro"> Outro</label>
+      </div>
+      <input type="text" id="territorioOutro" placeholder="Se outro, especifique" style="margin-top:8px">
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">Unidade territorial / identidade da comunidade</span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="checkbox" name="identidade" value="Quilombola"> Quilombola</label>
+        <label class="opt"><input type="checkbox" name="identidade" value="Indígena" id="chkIndigena"> Indígena</label>
+        <label class="opt"><input type="checkbox" name="identidade" value="Ribeirinha"> Ribeirinha</label>
+        <label class="opt"><input type="checkbox" name="identidade" value="Extrativista"> Extrativista</label>
+        <label class="opt"><input type="checkbox" name="identidade" value="Urbana"> Urbana</label>
+      </div>
+      <div class="campo hidden" id="campoEtnia">
+        <label class="rotulo" for="povoEtnia">Qual povo / etnia?</label>
+        <input type="text" id="povoEtnia" placeholder="Ex.: Katxuyana, Tunayana, Wai Wai, Hixkaryana...">
+      </div>
+      <div class="campo hidden" id="campoAldeia">
+        <label class="rotulo" for="aldeiaResidente">Residente em aldeia / reserva?</label>
+        <select id="aldeiaResidente">
+          <option value="">Selecione</option>
+          <option>Sim — residente em aldeia/reserva</option>
+          <option>Não — residente fora de aldeia/reserva</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">CRAS de referência</span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="radio" name="cras" value="CRAS São Pedro"> CRAS São Pedro</label>
+        <label class="opt"><input type="radio" name="cras" value="CRAS Cidade Nova"> CRAS Cidade Nova</label>
+        <label class="opt"><input type="radio" name="cras" value="CRAS Ribeirinho"> CRAS Ribeirinho</label>
+        <label class="opt"><input type="radio" name="cras" value="Outro"> Outro</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label class="rotulo" for="faixaRenda">Faixa de renda per capita registrada no sistema</label>
+      <select id="faixaRenda">
+        <option value="">Selecione</option>
+        <option>1 — Extrema pobreza</option>
+        <option>2 — Pobreza</option>
+        <option>3 — Baixa renda</option>
+        <option>4 — Acima de meio salário mínimo</option>
+      </select>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">Família já acompanhada pelo PAIF/PAEFI?</span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="radio" name="acompanhada" value="Sim"> Sim</label>
+        <label class="opt"><input type="radio" name="acompanhada" value="Não"> Não</label>
+        <label class="opt"><input type="radio" name="acompanhada" value="Não sabe"> Não sabe</label>
+      </div>
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 2 — COMPOSIÇÃO FAMILIAR ================= -->
+<details class="bloco cond">
+  <summary class="bloco-titulo">
+    <span class="bloco-num">2</span>
+    <span class="bloco-head">
+      <h2>Composição Familiar</h2>
+      <span class="hint">Membros, documentação, públicos prioritários e benefícios</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+    <div class="campo">
+      <label class="rotulo" for="qtdPessoas">1. Quantas pessoas moram na residência atualmente?</label>
+      <input type="number" id="qtdPessoas" inputmode="numeric" min="1" placeholder="Nº de pessoas">
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">2. Membros da família <span class="sub-rotulo">(comece pela pessoa de referência; a renda informada aqui alimenta o cálculo da renda per capita no Bloco 3)</span></span>
+      <div id="listaMembros"></div>
+      <button type="button" class="btn btn-fantasma" id="btnAddMembro" style="margin-top:12px">＋ Adicionar membro</button>
+      <div class="hint-dinamico" id="hintPrioritarios"></div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">3. Presença de públicos prioritários na casa</span>
+      <div class="opcoes">
+        <label class="opt"><input type="checkbox" name="prioritarios" value="Primeira infância (0 a 6 anos)"> Crianças na primeira infância (0 a 6 anos)</label>
+        <label class="opt"><input type="checkbox" name="prioritarios" value="Gestante" id="chkGestante"> Gestantes</label>
+        <label class="opt"><input type="checkbox" name="prioritarios" value="Idoso (60+)"> Idosos (60 anos ou mais)</label>
+        <label class="opt"><input type="checkbox" name="prioritarios" value="Pessoa com Deficiência (PCD)" id="chkPcd"> Pessoa com Deficiência (PCD)</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="prioritarios" value="Pessoa acamada" data-atencao="1" id="chkAcamada"> Pessoa acamada ou dependente de cuidados</label>
+      </div>
+
+      <!-- Painel condicional: gestação -->
+      <div class="painel-cond hidden" id="painelGestante">
+        <div class="campo linha2">
+          <div>
+            <label class="rotulo" for="gestMeses">Quantos meses de gestação?</label>
+            <input type="number" id="gestMeses" inputmode="numeric" min="1" max="9" placeholder="1 a 9">
+          </div>
+          <div>
+            <span class="grupo-rotulo" style="margin-bottom:7px">Já iniciou o pré-natal?</span>
+            <div class="opcoes horizontal">
+              <label class="opt"><input type="radio" name="preNatal" value="Sim"> Sim</label>
+              <label class="opt atencao-opt"><input type="radio" name="preNatal" value="Não" data-atencao="1"> Não</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel condicional: deficiência / cuidado -->
+      <div class="painel-cond hidden" id="painelCuidado">
+        <div class="campo" id="campoDefTipo">
+          <span class="grupo-rotulo">Tipo(s) de deficiência <span class="sub-rotulo">(conforme Prontuário SUAS)</span></span>
+          <div class="opcoes horizontal">
+            <label class="opt"><input type="checkbox" name="defTipo" value="Cegueira"> Cegueira</label>
+            <label class="opt"><input type="checkbox" name="defTipo" value="Baixa visão"> Baixa visão</label>
+            <label class="opt"><input type="checkbox" name="defTipo" value="Surdez severa/profunda"> Surdez severa/profunda</label>
+            <label class="opt"><input type="checkbox" name="defTipo" value="Surdez leve/moderada"> Surdez leve/moderada</label>
+            <label class="opt"><input type="checkbox" name="defTipo" value="Deficiência física"> Deficiência física</label>
+            <label class="opt"><input type="checkbox" name="defTipo" value="Deficiência mental ou intelectual"> Deficiência mental/intelectual</label>
+            <label class="opt"><input type="checkbox" name="defTipo" value="Síndrome de Down"> Síndrome de Down</label>
+            <label class="opt"><input type="checkbox" name="defTipo" value="Transtorno/doença mental"> Transtorno/doença mental</label>
+          </div>
+        </div>
+        <div class="campo">
+          <label class="rotulo" for="cuidador">Quem é o responsável pelo cuidado dessa(s) pessoa(s)?</label>
+          <input type="text" id="cuidador" placeholder="Nome e parentesco — ex.: filha mais velha, vizinha...">
+        </div>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">4. Acesso a benefícios <span class="sub-rotulo">(marque todos que a família recebe)</span></span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="checkbox" name="beneficios" value="BPC"> BPC</label>
+        <label class="opt"><input type="checkbox" name="beneficios" value="Bolsa Família"> Bolsa Família</label>
+        <label class="opt"><input type="checkbox" name="beneficios" value="Aposentadoria/Pensão"> Aposentadoria / Pensão</label>
+        <label class="opt"><input type="checkbox" name="beneficios" value="Seguro Defeso"> Seguro Defeso (pescador)</label>
+        <label class="opt"><input type="checkbox" name="beneficios" value="Outra fonte"> Outra fonte</label>
+        <label class="opt"><input type="checkbox" name="beneficios" value="Nenhum"> Nenhum benefício</label>
+      </div>
+      <input type="text" id="beneficioOutro" placeholder="Se outra fonte, especifique" style="margin-top:8px">
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 3 — FINANCEIRO E TRABALHO ================= -->
+<details class="bloco cond">
+  <summary class="bloco-titulo">
+    <span class="bloco-num">3</span>
+    <span class="bloco-head">
+      <h2>Realidade Financeira, Trabalho e Despesas</h2>
+      <span class="hint">Renda per capita calculada automaticamente</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+    <div class="campo">
+      <span class="grupo-rotulo">5. Principal motivo do cadastro estar desatualizado (ou não existir)</span>
+      <div class="opcoes">
+        <label class="opt"><input type="checkbox" name="motivoDesat" value="Dificuldade de locomoção / doença"> Dificuldade de locomoção / Doença</label>
+        <label class="opt"><input type="checkbox" name="motivoDesat" value="Falta de informação / distância até o CRAS"> Falta de informação / Distância até o CRAS</label>
+        <label class="opt"><input type="checkbox" name="motivoDesat" value="Falta de documentação civil"> Falta de documentação civil</label>
+        <label class="opt"><input type="checkbox" name="motivoDesat" value="Outro"> Outro</label>
+      </div>
+      <input type="text" id="motivoOutro" placeholder="Se outro, especifique" style="margin-top:8px">
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">6. Principais fontes de renda atuais <span class="sub-rotulo">(pode marcar mais de uma)</span></span>
+      <div class="opcoes">
+        <label class="opt alerta-opt"><input type="checkbox" name="fontesRenda" value="Nenhuma (renda zerada)" data-alerta="renda"> Nenhuma (renda familiar totalmente zerada)</label>
+        <label class="opt"><input type="checkbox" name="fontesRenda" value="Pesca / Agricultura familiar / Extrativismo"> Pesca / Agricultura familiar / Extrativismo</label>
+        <label class="opt"><input type="checkbox" name="fontesRenda" value="Bicos / Trabalho informal"> Bicos / Trabalho informal esporádico</label>
+        <label class="opt"><input type="checkbox" name="fontesRenda" value="Ajuda de terceiros / Doações"> Ajuda de terceiros / Doações da comunidade</label>
+        <label class="opt"><input type="checkbox" name="fontesRenda" value="Outra"> Outra</label>
+      </div>
+      <input type="text" id="rendaOutra" placeholder="Se outra, especifique" style="margin-top:8px">
+    </div>
+
+    <div class="campo">
+      <label class="rotulo" for="outrasRendas">Outras rendas mensais da família não listadas por membro (R$)</label>
+      <input type="number" id="outrasRendas" inputmode="decimal" step="0.01" placeholder="0,00">
+    </div>
+
+    <div class="calc-plate" id="placaPerCapita">
+      <div class="calc-titulo">Renda per capita estimada (calculada)</div>
+      <div class="calc-valor" id="perCapitaValor">R$ —</div>
+      <div class="calc-det" id="perCapitaDet">Preencha a renda dos membros (Bloco 2) e o nº de pessoas para calcular. Não inclua Bolsa Família/BPC no cálculo — siga a regra do CadÚnico.</div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">7. Há membro em situação de desemprego buscando vaga?</span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="radio" name="desemprego" value="Sim"> Sim</label>
+        <label class="opt"><input type="radio" name="desemprego" value="Não"> Não</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">8. Despesas mensais estimadas (R$) <span class="sub-rotulo">— preencher o que a família souber informar</span></span>
+      <div class="linha2">
+        <div><label class="rotulo" for="dAlimentacao">Alimentação</label><input type="number" id="dAlimentacao" inputmode="decimal" step="0.01"></div>
+        <div><label class="rotulo" for="dMedicamentos">Medicamentos</label><input type="number" id="dMedicamentos" inputmode="decimal" step="0.01"></div>
+        <div><label class="rotulo" for="dEnergia">Energia / Combustível do gerador</label><input type="number" id="dEnergia" inputmode="decimal" step="0.01"></div>
+        <div><label class="rotulo" for="dAgua">Água</label><input type="number" id="dAgua" inputmode="decimal" step="0.01"></div>
+        <div><label class="rotulo" for="dGas">Gás / Lenha</label><input type="number" id="dGas" inputmode="decimal" step="0.01"></div>
+        <div><label class="rotulo" for="dAluguel">Aluguel</label><input type="number" id="dAluguel" inputmode="decimal" step="0.01"></div>
+      </div>
+      <div class="campo"><label class="rotulo" for="dOutras">Outras despesas (descrever e estimar)</label><input type="text" id="dOutras" placeholder="Ex.: transporte escolar fluvial R$ 80"></div>
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 4 — VULNERABILIDADES ================= -->
+<details class="bloco cond">
+  <summary class="bloco-titulo">
+    <span class="bloco-num">4</span>
+    <span class="bloco-head">
+      <h2>Mapeamento de Vulnerabilidades e Riscos</h2>
+      <span class="hint">Alimentação, educação, saúde, habitação e afastamentos</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+    <div class="campo">
+      <span class="grupo-rotulo">9. Insegurança alimentar <span class="sub-rotulo">(prioridade máxima)</span></span>
+      <div class="opcoes">
+        <label class="opt alerta-opt"><input type="radio" name="alimentar" value="ALERTA GRAVE: falta comida / relato de fome" data-alerta="fome"><span><span class="tag-grave">Alerta grave</span>Falta comida em casa / relato de fome nos últimos dias</span></label>
+        <label class="opt atencao-opt"><input type="radio" name="alimentar" value="Instável (depende de doações)" data-atencao="1"> Alimentação instável (depende exclusivamente de doações/terceiros)</label>
+        <label class="opt"><input type="radio" name="alimentar" value="Estável"> Alimentação estável no momento</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">10. Educação e proteção</span>
+      <div class="opcoes">
+        <label class="opt alerta-opt"><input type="checkbox" name="educacao" value="Criança/adolescente fora da escola" data-alerta="escola"> Há crianças ou adolescentes em idade escolar FORA da escola</label>
+        <label class="opt alerta-opt"><input type="checkbox" name="educacao" value="Suspeita/confirmação de trabalho infantil" data-alerta="trabinf" data-compulsoria="1"><span><span class="tag-comp">Notificação</span>Suspeita ou confirmação de trabalho infantil</span></label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">11. Saúde</span>
+      <div class="opcoes">
+        <label class="opt alerta-opt"><input type="checkbox" name="saude" value="Doença grave / acamado / sem acesso a tratamento" data-alerta="saude"> Membro com doença grave, acamado ou sem acesso a medicamentos/tratamento</label>
+      </div>
+      <div class="campo">
+        <span class="grupo-rotulo">A família possui acompanhamento de saúde (UBS / ACS)?</span>
+        <div class="opcoes horizontal">
+          <label class="opt"><input type="radio" name="acompSaude" value="Sim, regular"> Sim, regular</label>
+          <label class="opt"><input type="radio" name="acompSaude" value="Sim, esporádico"> Sim, esporádico</label>
+          <label class="opt atencao-opt"><input type="radio" name="acompSaude" value="Não possui" data-atencao="1"> Não possui</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">12. Afastamentos do convívio familiar <span class="sub-rotulo">(conforme Prontuário SUAS)</span></span>
+      <div class="opcoes">
+        <label class="opt atencao-opt"><input type="checkbox" name="afastamento" value="Membro adulto em instituição prisional" data-atencao="1"> Membro adulto (pais ou filhos) em instituição prisional</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="afastamento" value="Adolescente cumprindo medida socioeducativa" data-atencao="1"> Adolescente cumprindo medida socioeducativa</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="afastamento" value="Criança/adolescente sob guarda de terceiros ou já acolhido" data-atencao="1"> Criança/adolescente sob guarda de terceiros ou com histórico de acolhimento</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">13. Habitação e território</span>
+      <div class="opcoes">
+        <label class="opt alerta-opt"><input type="checkbox" name="habitacao" value="Risco estrutural (alagamento/desbarrancamento/casa precária)" data-alerta="risco"> Risco estrutural (alagamento de várzea severo, desbarrancamento, casa muito precária)</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="habitacao" value="Falta de água potável tratada" data-atencao="1"> Falta de acesso à água potável tratada</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="habitacao" value="Falta de acesso à energia elétrica" data-atencao="1"> Falta de acesso à energia elétrica</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="habitacao" value="Rua/via/acesso intrafegável" data-atencao="1"> Rua, via ou acesso intrafegável</label>
+      </div>
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 5 — ESCUTA QUALIFICADA ================= -->
+<details class="bloco cond">
+  <summary class="bloco-titulo">
+    <span class="bloco-num">5</span>
+    <span class="bloco-head">
+      <h2>Observação Técnica e Escuta Qualificada</h2>
+      <span class="hint">Violações, território, rede de apoio e síntese</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+    <div class="campo">
+      <span class="grupo-rotulo">Sinais de violação de direitos <span class="sub-rotulo">(assinalar apenas em caso de suspeita ou evidência na visita)</span></span>
+      <div class="opcoes">
+        <label class="opt alerta-opt"><input type="checkbox" name="violacoes" value="Idosos/Crianças: sinais de negligência, abandono, desnutrição ou falta de higiene grave" data-alerta="violacao"><span><span class="tag-grave">Sigiloso</span>Idosos/Crianças: sinais de negligência, abandono, desnutrição ou falta de higiene grave</span></label>
+        <label class="opt alerta-opt"><input type="checkbox" name="violacoes" value="Suspeita de violência física ou psicológica" data-alerta="violacao"><span><span class="tag-grave">Sigiloso</span>Suspeita de violência física ou psicológica (qualquer membro)</span></label>
+        <label class="opt alerta-opt"><input type="checkbox" name="violacoes" value="Suspeita de abuso ou violência sexual" data-alerta="violacao" data-compulsoria="1"><span><span class="tag-comp">Notificação</span>Suspeita de abuso ou violência sexual (qualquer membro)</span></label>
+        <label class="opt alerta-opt"><input type="checkbox" name="violacoes" value="Membro em trajetória de rua" data-alerta="violacao"><span><span class="tag-grave">Sigiloso</span>Membro em trajetória de rua (atual ou recente)</span></label>
+        <label class="opt alerta-opt"><input type="checkbox" name="violacoes" value="Indício de tráfico de pessoas / aliciamento" data-alerta="violacao" data-compulsoria="1"><span><span class="tag-comp">Notificação</span>Indício de tráfico de pessoas ou aliciamento para trabalho degradante</span></label>
+        <label class="opt"><input type="checkbox" name="violacoes" value="Nenhuma violação aparente identificada" id="chkNenhumaViolacao"> Nenhuma violação aparente identificada no momento da visita</label>
+      </div>
+      <div class="aviso laranja">⚠️ Situações deste bloco geram relatório sigiloso ao PAEFI/CREAS (o encaminhamento é marcado automaticamente no Bloco 7). Não discuta as suspeitas na frente da família ou de vizinhos.</div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">Território e convivência comunitária</span>
+      <div class="opcoes">
+        <label class="opt atencao-opt"><input type="checkbox" name="territorioConv" value="Família vítima de ameaça ou discriminação na comunidade/território" data-atencao="1"> Família (ou membro) é vítima de ameaça ou discriminação na comunidade onde reside — inclusive conflito fundiário</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="territorioConv" value="Dependentes passam períodos do dia sem companhia de adulto" data-atencao="1"> Crianças, idosos dependentes ou PCD passam períodos do dia em casa sem a companhia de um adulto</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <span class="grupo-rotulo">Rede de apoio e solidariedade <span class="sub-rotulo">(marque as que a família possui)</span></span>
+      <div class="opcoes horizontal">
+        <label class="opt"><input type="checkbox" name="rede" value="Parentes próximos"> Parentes próximos</label>
+        <label class="opt"><input type="checkbox" name="rede" value="Vizinhos"> Vizinhos</label>
+        <label class="opt"><input type="checkbox" name="rede" value="Grupos religiosos/comunitários"> Grupos religiosos / comunitários</label>
+        <label class="opt"><input type="checkbox" name="rede" value="Associação / liderança comunitária"> Associação / liderança comunitária</label>
+        <label class="opt atencao-opt"><input type="checkbox" name="rede" value="Nenhuma rede de apoio" data-atencao="1"> Nenhuma rede de apoio identificada</label>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label class="rotulo" for="sintese">Síntese da escuta qualificada</label>
+      <textarea id="sintese" placeholder="Descreva a dinâmica familiar, a principal demanda relatada, as condições do ambiente e a convivência familiar/comunitária."></textarea>
+    </div>
+
+    <div class="campo">
+      <label class="rotulo" for="potencialidades">Potencialidades da família e da comunidade</label>
+      <textarea id="potencialidades" placeholder="Saberes, ofícios, redes de apoio, lideranças, associação comunitária, produção local..."></textarea>
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 6 — DEMANDAS PARA SERVIÇOS ================= -->
+<details class="bloco cond">
+  <summary class="bloco-titulo">
+    <span class="bloco-num">6</span>
+    <span class="bloco-head">
+      <h2>Demandas para os Serviços — SCFV e PCF</h2>
+      <span class="hint">Identificação de público para os serviços de convivência</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+    <div class="campo">
+      <span class="grupo-rotulo">Há público para o SCFV na família?</span>
+      <div class="opcoes">
+        <label class="opt"><input type="checkbox" name="scfv" value="Crianças 0-6"> Crianças de 0 a 6 anos</label>
+        <label class="opt"><input type="checkbox" name="scfv" value="Crianças/adolescentes 6-15"> Crianças e adolescentes de 6 a 15 anos</label>
+        <label class="opt"><input type="checkbox" name="scfv" value="Adolescentes 15-17"> Adolescentes de 15 a 17 anos</label>
+        <label class="opt"><input type="checkbox" name="scfv" value="Idosos 60+"> Pessoas idosas (60+)</label>
+        <label class="opt"><input type="checkbox" name="scfv" value="Sem demanda"> Sem demanda identificada</label>
+      </div>
+    </div>
+    <div class="campo">
+      <span class="grupo-rotulo">Há público para o Programa Criança Feliz (PCF)?</span>
+      <div class="opcoes">
+        <label class="opt"><input type="checkbox" name="pcf" value="Gestante"> Gestante</label>
+        <label class="opt"><input type="checkbox" name="pcf" value="Criança 0-3 (ou 0-6 com BPC)"> Criança de 0 a 3 anos (ou até 6 anos com BPC)</label>
+        <label class="opt"><input type="checkbox" name="pcf" value="Sem demanda"> Sem demanda identificada</label>
+      </div>
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 7 — ENCAMINHAMENTOS ================= -->
+<details class="bloco cond">
+  <summary class="bloco-titulo">
+    <span class="bloco-num">7</span>
+    <span class="bloco-head">
+      <h2>Encaminhamentos e Intersetorialidade</h2>
+      <span class="hint">Alguns itens são sugeridos automaticamente pela ficha</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+    <div class="campo">
+      <span class="grupo-rotulo">No âmbito da Assistência Social</span>
+      <div class="opcoes">
+        <label class="opt"><input type="checkbox" name="encAssist" value="Benefício eventual: cesta básica / auxílio alimentação"> Benefício Eventual: solicitação de cesta básica / auxílio alimentação</label>
+        <label class="opt"><input type="checkbox" name="encAssist" value="CadÚnico: INCLUSÃO — família sem cadastro" id="encCadInclusao"> CadÚnico: <strong>inclusão</strong> — família sem cadastro</label>
+        <label class="opt"><input type="checkbox" name="encAssist" value="CadÚnico: atualização cadastral / coleta de documentos"> CadÚnico: atualização cadastral / coleta de documentos</label>
+        <label class="opt"><input type="checkbox" name="encAssist" value="Documentação civil: emissão de CN/RG/CPF/CTPS (mutirão/cartório)" id="encDocCivil"> Documentação civil: emissão de documentos (mutirão / cartório / Justiça Itinerante)</label>
+        <label class="opt"><input type="checkbox" name="encAssist" value="INSS: acesso ao BPC ou outros direitos"> INSS: acesso ao BPC ou outros direitos previdenciários</label>
+        <label class="opt"><input type="checkbox" name="encAssist" value="PAIF (CRAS): família referenciada — registrar no RMA"> PAIF (CRAS): família referenciada para acompanhamento — <strong>registrar no RMA</strong></label>
+        <label class="opt alerta-opt"><input type="checkbox" name="encAssist" value="PAEFI (CREAS): relatório sigiloso (Bloco 5)" data-alerta="paefi" id="encPaefi"><span><span class="tag-grave">Alerta</span>PAEFI (CREAS): relatório sigiloso será gerado (referente ao Bloco 5)</span></label>
+        <label class="opt"><input type="checkbox" name="encAssist" value="SCFV: inclusão de membro(s)"> SCFV: encaminhamento para inclusão de membro(s)</label>
+        <label class="opt"><input type="checkbox" name="encAssist" value="PCF: inclusão na visitação domiciliar"> PCF: encaminhamento para visitação domiciliar</label>
+      </div>
+    </div>
+    <div class="campo">
+      <span class="grupo-rotulo">No âmbito de outras políticas públicas</span>
+      <div class="opcoes">
+        <label class="opt"><input type="checkbox" name="encOutras" value="Saúde: UBS / ACS"> Saúde: encaminhamento/comunicação à UBS ou Agente Comunitário de Saúde (ACS)</label>
+        <label class="opt"><input type="checkbox" name="encOutras" value="Saúde indígena: DSEI / polo-base"> Saúde indígena: comunicação ao DSEI / polo-base</label>
+        <label class="opt"><input type="checkbox" name="encOutras" value="Saúde mental: CAPS"> Saúde mental: encaminhamento ao CAPS</label>
+        <label class="opt"><input type="checkbox" name="encOutras" value="Educação: Conselho Tutelar / Busca Ativa Escolar"> Educação: acionamento do Conselho Tutelar / Busca Ativa Escolar</label>
+        <label class="opt"><input type="checkbox" name="encOutras" value="Defesa Civil / Habitação: vistoria de risco"> Defesa Civil / Habitação: solicitação de vistoria de risco</label>
+      </div>
+    </div>
+    <div class="campo">
+      <label class="rotulo" for="obsAdicionais">Observações adicionais</label>
+      <textarea id="obsAdicionais"></textarea>
+    </div>
+  </div>
+</details>
+
+<!-- ================= BLOCO 8 — RESPONSÁVEL ================= -->
+<details class="bloco" open>
+  <summary class="bloco-titulo">
+    <span class="bloco-num">8</span>
+    <span class="bloco-head">
+      <h2>Técnico Responsável</h2>
+      <span class="hint">Obrigatório para finalizar a ficha</span>
+    </span>
+    <svg class="seta" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </summary>
+  <div class="bloco-corpo">
+    <div class="campo linha2">
+      <div>
+        <label class="rotulo" for="tecnico">Nome do técnico responsável</label>
+        <input type="text" id="tecnico">
+      </div>
+      <div>
+        <label class="rotulo" for="funcao">Função / matrícula</label>
+        <input type="text" id="funcao" placeholder="Ex.: Assistente Social — CRESS ...">
+      </div>
+    </div>
+    <div class="campo">
+      <label class="rotulo" for="tecnico2">Demais profissionais presentes na visita (opcional)</label>
+      <input type="text" id="tecnico2" placeholder="Ex.: psicóloga Maria (CRP...), piloteiro João">
+    </div>
+    <div class="aviso">🔒 Os dados desta ficha são sigilosos (LGPD e Código de Ética profissional). Use apenas para fins do SUAS e entregue/registre na Vigilância Socioassistencial ao retornar da expedição. As informações desta ficha devem retroalimentar o Prontuário SUAS físico da família na unidade de referência.</div>
+  </div>
+</details>
+
+</main>
+
+<div class="rodape-doc">Departamento de Vigilância Socioassistencial · SEMAS Oriximiná/PA · Ficha de Busca Ativa e Escuta Qualificada v3.5</div>
+
+<!-- Ações fixas -->
+<div class="acoes-fixas">
+  <button type="button" class="btn btn-secundario" id="btnSalvar">💾 Salvar</button>
+  <button type="button" class="btn btn-primario" id="btnResumo">✅ Finalizar e exportar</button>
+</div>
+
+<!-- Modal resumo -->
+<div class="modal-fundo" id="modalFundo">
+  <div class="modal">
+    <button class="fechar" id="btnFechar">✕</button>
+    <h3>Resumo da visita — pronto para envio</h3>
+    <textarea id="resumoTexto" readonly></textarea>
+    <button type="button" class="btn btn-primario" id="btnCopiar">📋 Copiar texto</button>
+    <button type="button" class="btn btn-secundario" id="btnWhats">💬 Enviar por WhatsApp</button>
+    <button type="button" class="btn btn-fantasma" id="btnJson">⬇️ Baixar esta ficha (JSON p/ Power BI)</button>
+  </div>
+</div>
+
+<!-- Modal fichas salvas -->
+<div class="modal-fundo" id="modalFichas">
+  <div class="modal">
+    <button class="fechar" id="btnFecharFichas">✕</button>
+    <h3>Fichas salvas neste aparelho</h3>
+    <div class="aviso">As fichas ficam salvas apenas neste navegador/aparelho. Ao fim da expedição, use "Exportar todas" e envie o arquivo à Vigilância — depois disso as fichas podem ser excluídas.</div>
+    <div id="listaFichas" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button type="button" class="btn btn-primario" id="btnJsonTodas">⬇️ Exportar todas (JSON p/ Power BI)</button>
+  </div>
+</div>
+
+<!-- Modal instalar (iPhone / navegadores sem instalação automática) -->
+<div class="modal-fundo" id="modalInstalar">
+  <div class="modal">
+    <button class="fechar" id="btnFecharInstalar">✕</button>
+    <h3>📲 Instalar a ficha como aplicativo</h3>
+    <div id="instrIos">
+      <p style="font-size:14.5px">No <strong>iPhone/iPad</strong>, a instalação é feita pelo <strong>Safari</strong>:</p>
+      <ol class="passos-ios">
+        <li>Toque no botão <strong>Compartilhar</strong> <span class="icone-ios">⬆︎</span> (na barra inferior do Safari);</li>
+        <li>Role a lista e toque em <strong>Adicionar à Tela de Início</strong> <span class="icone-ios">＋</span>;</li>
+        <li>Confirme em <strong>Adicionar</strong>. O ícone <strong>Busca Ativa</strong> aparece na tela inicial.</li>
+      </ol>
+      <div class="aviso laranja">Abriu este link pelo WhatsApp, Chrome ou outro app? Copie o endereço e abra no <strong>Safari</strong> — só ele instala no iPhone.</div>
+    </div>
+    <div id="instrOutros" class="hidden">
+      <ol class="passos-ios">
+        <li>Abra este endereço no <strong>Chrome</strong>;</li>
+        <li>Toque em <strong>⋮</strong> (canto superior direito);</li>
+        <li>Toque em <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
+      </ol>
+    </div>
+    <div class="aviso">✅ Depois de instalada, a ficha abre em tela cheia, com um toque, e <strong>funciona sem internet</strong> durante a expedição. Abra uma vez com internet antes de sair, para garantir a versão mais recente.</div>
+    <button type="button" class="btn btn-secundario" id="btnCopiarLink">🔗 Copiar o endereço da ficha</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ Utilidades ============ */
+const $ = id => document.getElementById(id);
+const toast = msg => { const t=$('toast'); t.textContent=msg; t.classList.add('mostra'); setTimeout(()=>t.classList.remove('mostra'),2600); };
+
+/* ============ CONFIG — revisar anualmente ============ */
+const CONFIG = {
+  // Linha de pobreza per capita do Programa Bolsa Família (R$). Atualize quando o valor mudar.
+  LINHA_POBREZA: 218
+};
+
+/* ============ Armazenamento seguro (localStorage com tolerância a falhas) ============ */
+const memFallback = {};
+function lsGet(chave){
+  try{ return localStorage.getItem(chave); }catch(e){ return memFallback[chave]||null; }
+}
+function lsSet(chave, valor){
+  try{ localStorage.setItem(chave, valor); return true; }
+  catch(e){ memFallback[chave]=valor; return false; }
+}
+function lsDel(chave){
+  try{ localStorage.removeItem(chave); }catch(e){ delete memFallback[chave]; }
+}
+const CHAVE_FICHAS = 'vs_ba_fichas_v3';
+
+function lerFichas(){
+  try{ return JSON.parse(lsGet(CHAVE_FICHAS)||'{}') || {}; }catch(e){ return {}; }
+}
+function gravarFichas(obj){
+  const ok = lsSet(CHAVE_FICHAS, JSON.stringify(obj));
+  if(!ok && !gravarFichas.avisado){
+    gravarFichas.avisado = true;
+    toast('Atenção: sem armazenamento neste navegador — exporte antes de fechar!');
+  }
+}
+
+/* ============ Identificador único do atendimento ============ */
+let fichaId = null;
+function gerarId(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const rand = Math.random().toString(36).slice(2,6).toUpperCase();
+  return `BA-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${rand}`;
+}
+function mostrarId(){ $('idPlate').textContent = 'ID: ' + (fichaId||'—'); }
+
+/* ============ Data automática ============ */
+function agoraLocalISO(){
+  const agora = new Date();
+  agora.setMinutes(agora.getMinutes()-agora.getTimezoneOffset());
+  return agora.toISOString().slice(0,16);
+}
+
+/* ============ Localização (v3.2 — quatro caminhos independentes) ============
+   A: GPS do navegador (watchPosition com melhoria progressiva de precisão)
+   B: EXIF de foto tirada com a câmera (offline, sem permissão do navegador)
+   C: Colar coordenadas do Google Maps (separa lat/lng sozinho)
+   D: Digitação manual
+   O método usado é registrado no JSON (geo.metodo_captura). */
+let gpsWatch = null, gpsMelhor = null, gpsTimerFim = null, gpsMetodo = '';
+const GPS_PRECISAO_BOA = 30;   // m — para automaticamente ao atingir
+const GPS_TEMPO_MAX = 32000;   // ms — usa a melhor leitura obtida até aqui
+
+function gpsUI(coords, meta){ $('gpsCoords').textContent = coords; $('gpsMeta').textContent = meta; }
+function gpsPararWatch(){
+  if(gpsWatch !== null){ try{ navigator.geolocation.clearWatch(gpsWatch); }catch(e){} gpsWatch = null; }
+  clearTimeout(gpsTimerFim); gpsTimerFim = null;
+  $('btnGps').textContent = '📍 Capturar localização GPS';
+}
+function gpsFinalizar(){
+  gpsPararWatch();
+  if(!gpsMelhor) return;
+  const {latitude, longitude, accuracy} = gpsMelhor;
+  gpsMetodo = 'satelite';
+  $('lat').value = latitude.toFixed(6);
+  $('lng').value = longitude.toFixed(6);
+  $('precisao').value = Math.round(accuracy);
+  $('gpsHora').value = new Date().toLocaleString('pt-BR');
+  gpsUI(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+    `Precisão ±${Math.round(accuracy)} m · Capturado em ${$('gpsHora').value}`);
+  toast('Localização capturada!');
+  autoSalvar();
+}
+const dentroDeVisualizador = (function(){ try{ return window.self !== window.top; }catch(e){ return true; } })();
+const MSG_VISUALIZADOR = 'O visualizador onde a ficha está aberta não deixa o navegador pedir a permissão de localização — isso não depende das configurações do celular. Toque em “🔓 Abrir a ficha em tela cheia” logo acima: na aba do navegador o pedido de permissão aparece normalmente. Alternativa: “📷 Extrair localização de uma foto”.';
+function gpsErroMsg(err){
+  if(err && err.code === 1){
+    if(dentroDeVisualizador) return MSG_VISUALIZADOR;
+    return 'Permissão negada pelo navegador. Toque no cadeado (ou ⓘ) na barra de endereço → Permissões → Localização → Permitir. Se o arquivo foi aberto direto do WhatsApp ou do app de Arquivos, veja “GPS não funcionou no celular?” logo abaixo. Alternativa imediata: “📷 Extrair localização de uma foto”.';
+  }
+  if(err && err.code === 2) return 'Posição indisponível. Confira se a localização do aparelho está LIGADA (modo alta precisão) e tente novamente ao ar livre — ou use “📷 Extrair localização de uma foto”.';
+  return 'Tempo esgotado sem sinal suficiente. Tente novamente em local aberto — ou tire uma foto da residência e use “📷 Extrair localização de uma foto”.';
+}
+$('btnGps').addEventListener('click', async ()=>{
+  if(gpsWatch !== null){
+    // Segundo toque: para a busca e usa a melhor leitura obtida
+    if(gpsMelhor){ gpsFinalizar(); }
+    else { gpsPararWatch(); gpsUI('— captura cancelada —','Toque para tentar de novo, ou digite as coordenadas manualmente abaixo.'); }
+    return;
+  }
+  if(!navigator.geolocation){
+    gpsUI('— GPS não disponível —','Este navegador não oferece geolocalização. Digite as coordenadas manualmente abaixo.');
+    $('ajudaGps').open = true; return;
+  }
+  if(window.isSecureContext === false){
+    gpsUI('— bloqueado pelo navegador —','O arquivo foi aberto de um modo em que o navegador bloqueia o GPS (ex.: direto do WhatsApp ou do app de Arquivos). Use “📷 Extrair localização de uma foto” ou veja as instruções abaixo.');
+    $('ajudaGps').open = true;
+    toast('GPS bloqueado — use a foto ou veja as instruções');
+    return;
+  }
+  // Pré-diagnóstico: se a permissão já está negada, aponta a causa sem esperar o timeout
+  try{
+    if(navigator.permissions && navigator.permissions.query){
+      const p = await navigator.permissions.query({name:'geolocation'});
+      if(p.state === 'denied'){
+        gpsUI('— GPS bloqueado —', gpsErroMsg({code:1}));
+        $('ajudaGps').open = true;
+        return;
+      }
+    }
+  }catch(e){ /* segue para a tentativa normal */ }
+  gpsMelhor = null;
+  $('btnGps').textContent = '⏹ Parar e usar a melhor leitura';
+  gpsUI('Buscando satélites…','Aguarde até 30 segundos em local aberto. A precisão melhora sozinha durante a busca.');
+  try{
+    gpsWatch = navigator.geolocation.watchPosition(pos=>{
+      const c = pos.coords;
+      if(!gpsMelhor || c.accuracy < gpsMelhor.accuracy){
+        gpsMelhor = {latitude:c.latitude, longitude:c.longitude, accuracy:c.accuracy};
+        gpsUI(`${c.latitude.toFixed(6)}, ${c.longitude.toFixed(6)}`,
+          `Precisão atual ±${Math.round(c.accuracy)} m — aguardando melhorar…`);
+      }
+      if(c.accuracy <= GPS_PRECISAO_BOA) gpsFinalizar();
+    }, err=>{
+      if(gpsMelhor){ gpsFinalizar(); return; }
+      gpsPararWatch();
+      gpsUI('— falha na captura —', gpsErroMsg(err));
+      if(err && err.code === 1) $('ajudaGps').open = true;
+    }, {enableHighAccuracy:true, timeout:30000, maximumAge:0});
+  }catch(e){
+    gpsPararWatch();
+    gpsUI('— falha na captura —','Não foi possível iniciar o GPS neste navegador. Digite as coordenadas manualmente abaixo.');
+    $('ajudaGps').open = true;
+    return;
+  }
+  gpsTimerFim = setTimeout(()=>{
+    if(gpsMelhor) gpsFinalizar();
+    else { gpsPararWatch(); gpsUI('— sem sinal suficiente —', gpsErroMsg({code:3})); }
+  }, GPS_TEMPO_MAX);
+});
+
+/* ---- Caminho B: coordenadas gravadas pela câmera na foto (EXIF), lidas offline ---- */
+function lerTiffGps(v, t){
+  const le = v.getUint16(t) === 0x4949; // ordem de bytes 'II' (Intel)
+  const u16 = o => v.getUint16(o, le), u32 = o => v.getUint32(o, le);
+  if(u16(t+2) !== 42) return null;
+  const ifd0 = t + u32(t+4);
+  let gpsIfd = 0;
+  const n = u16(ifd0);
+  for(let i=0;i<n;i++){
+    const e = ifd0 + 2 + i*12;
+    if(u16(e) === 0x8825){ gpsIfd = t + u32(e+8); break; }
+  }
+  if(!gpsIfd) return null;
+  const gn = u16(gpsIfd);
+  let latRef='', lngRef='', lat=null, lng=null;
+  const graus3 = off=>{
+    let g=0, mult=1;
+    for(let k=0;k<3;k++){
+      const num=u32(off+k*8), den=u32(off+k*8+4);
+      g += (den? num/den : 0)/mult; mult*=60;
+    }
+    return g;
+  };
+  for(let i=0;i<gn;i++){
+    const e = gpsIfd + 2 + i*12;
+    const tag = u16(e), tipo = u16(e+2), cont = u32(e+4);
+    if(tag === 1) latRef = String.fromCharCode(v.getUint8(e+8));
+    else if(tag === 3) lngRef = String.fromCharCode(v.getUint8(e+8));
+    else if(tag === 2 && tipo === 5 && cont === 3) lat = graus3(t + u32(e+8));
+    else if(tag === 4 && tipo === 5 && cont === 3) lng = graus3(t + u32(e+8));
+  }
+  if(lat === null || lng === null) return null;
+  if(latRef === 'S') lat = -lat;
+  if(lngRef === 'W') lng = -lng;
+  if(!isFinite(lat) || !isFinite(lng) || (lat === 0 && lng === 0)) return null;
+  if(Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return {lat, lng};
+}
+function exifGps(buf){
+  const v = new DataView(buf);
+  if(v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return {erro:'nao_jpeg'};
+  let off = 2;
+  while(off + 4 <= v.byteLength){
+    if(v.getUint8(off) !== 0xFF) break;
+    const marcador = v.getUint8(off+1);
+    if(marcador === 0xDA || marcador === 0xD9) break;
+    const tam = v.getUint16(off+2);
+    if(tam < 2) break;
+    if(marcador === 0xE1 && tam >= 10 &&
+       v.getUint32(off+4) === 0x45786966 && v.getUint16(off+8) === 0){ // "Exif\0\0"
+      try{
+        const g = lerTiffGps(v, off + 10);
+        return g || {erro:'sem_gps'};
+      }catch(e){ return {erro:'sem_gps'}; }
+    }
+    off += 2 + tam;
+  }
+  return {erro:'sem_exif'};
+}
+/* ---- Diagnóstico de um toque (para enviar à Vigilância quando nada funciona) ---- */
+$('btnDiag').addEventListener('click', async ()=>{
+  const l = [];
+  l.push('DIAGNÓSTICO DE LOCALIZAÇÃO — Ficha v3.5');
+  l.push('Quando: ' + new Date().toLocaleString('pt-BR'));
+  l.push('Navegador: ' + navigator.userAgent);
+  l.push('Endereço: ' + location.protocol + '//' + (location.host || '(arquivo local)'));
+  l.push('Contexto seguro: ' + window.isSecureContext);
+  l.push('Dentro de visualizador (iframe): ' + dentroDeVisualizador);
+  l.push('API de geolocalização presente: ' + !!navigator.geolocation);
+  try{
+    if(navigator.permissions && navigator.permissions.query){
+      const p = await navigator.permissions.query({name:'geolocation'});
+      l.push('Estado da permissão de localização: ' + p.state);
+    } else l.push('Estado da permissão: (navegador não informa)');
+  }catch(e){ l.push('Estado da permissão: erro ao consultar'); }
+  l.push('Plataforma de publicação (window.claude): ' + !!window.claude);
+  const t = $('diagTexto');
+  t.classList.remove('hidden');
+  t.value = l.join('\n') + '\nTeste ao vivo do GPS: aguardando resposta (até 15 s)…';
+  let respondeu = false;
+  const concluir = res=>{
+    if(respondeu) return; respondeu = true;
+    t.value = l.join('\n') + '\n' + res;
+    try{ navigator.clipboard.writeText(t.value).then(()=>toast('Diagnóstico copiado — cole na conversa com a Vigilância')); }catch(e){}
+  };
+  if(!navigator.geolocation){ concluir('Teste ao vivo do GPS: API ausente neste navegador'); return; }
+  try{
+    navigator.geolocation.getCurrentPosition(
+      p=>concluir(`Teste ao vivo do GPS: SUCESSO — precisão ±${Math.round(p.coords.accuracy)} m`),
+      e=>concluir(`Teste ao vivo do GPS: ERRO código ${e.code} — ` +
+        (e.code===1?'permissão negada ou bloqueada pelo ambiente':'') +
+        (e.code===2?'posição indisponível (localização do aparelho desligada?)':'') +
+        (e.code===3?'tempo esgotado sem sinal':'') +
+        (e.message?` [${e.message}]`:'')),
+      {enableHighAccuracy:true, timeout:12000, maximumAge:0});
+  }catch(e){ concluir('Teste ao vivo do GPS: exceção ao chamar a API'); }
+  setTimeout(()=>concluir('Teste ao vivo do GPS: SEM RESPOSTA em 15 s — o ambiente está suprimindo o pedido de permissão sem avisar'), 15000);
+});
+
+/* ---- Abrir em tela cheia (fora do visualizador, o navegador pede a permissão) ---- */
+$('btnTelaCheia').addEventListener('click', ()=>{
+  let aba = null;
+  try{ aba = window.open(location.href, '_blank'); }catch(e){}
+  if(aba){
+    toast('Ficha aberta em nova aba — continue por lá para usar o GPS');
+    return;
+  }
+  // Nova aba bloqueada: oferece o endereço para abrir manualmente
+  const orientar = copiou => gpsUI('— abra no navegador —', copiou
+    ? 'Endereço da ficha copiado! Abra o navegador do celular (Chrome/Safari), cole na barra de endereço e continue por lá — o pedido de localização vai aparecer normalmente.'
+    : 'Abra este mesmo endereço no navegador do celular (Chrome/Safari) — lá o pedido de localização aparece normalmente.');
+  try{
+    navigator.clipboard.writeText(location.href).then(()=>{ orientar(true); toast('Endereço copiado'); }, ()=>orientar(false));
+  }catch(e){ orientar(false); }
+});
+
+$('btnFoto').addEventListener('click', ()=> $('fotoGps').click());
+$('fotoGps').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    let res;
+    try{ res = exifGps(r.result); }catch(err){ res = {erro:'sem_exif'}; }
+    e.target.value = ''; // descarta a foto e permite nova escolha
+    if(res && res.lat !== undefined){
+      gpsPararWatch();
+      gpsMetodo = 'foto';
+      $('lat').value = res.lat.toFixed(6); $('lng').value = res.lng.toFixed(6);
+      $('precisao').value = ''; $('gpsHora').value = new Date().toLocaleString('pt-BR');
+      $('latManual').value = res.lat.toFixed(6); $('lngManual').value = res.lng.toFixed(6);
+      gpsUI(`${res.lat.toFixed(6)}, ${res.lng.toFixed(6)}`, `Obtida da foto · ${$('gpsHora').value} · a imagem não foi guardada`);
+      toast('Coordenadas extraídas da foto!');
+      autoSalvar();
+    } else {
+      const msgs = {
+        nao_jpeg:'Este formato de imagem não traz o local de forma legível (ex.: HEIC/PNG). Configure a câmera para “Mais compatível”/JPEG, tire outra foto e tente de novo.',
+        sem_exif:'A imagem veio sem os dados da câmera. No Android, a Galeria/Fotos remove esses dados: toque de novo e escolha a foto pelo app ARQUIVOS, pasta DCIM › Camera. (Capturas de tela também não têm local.)',
+        sem_gps:'A foto veio sem local gravado. Duas causas comuns: (1) a Galeria/Fotos do Android remove o local — escolha pelo app ARQUIVOS, pasta DCIM › Camera; (2) a câmera está sem “Salvar local” ativado — ative nas configurações da câmera e tire outra foto.'
+      };
+      gpsUI('— foto sem localização —', msgs[(res && res.erro) || 'sem_gps']);
+      $('ajudaGps').open = true;
+    }
+  };
+  r.readAsArrayBuffer(f.slice(0, 262144)); // o EXIF fica no início do arquivo
+});
+
+/* ---- Caminho C: colar coordenadas do Google Maps (ex.: "-1.765280, -55.866110") ---- */
+function separarCoordenadasColadas(valor){
+  const m = String(valor).match(/(-?\d{1,3}[\.,]\d{3,})[^\d\-]+(-?\d{1,3}[\.,]\d{3,})/);
+  if(!m) return false;
+  $('latManual').value = m[1].replace(',','.');
+  $('lngManual').value = m[2].replace(',','.');
+  toast('Coordenadas separadas automaticamente');
+  autoSalvar();
+  return true;
+}
+$('latManual').addEventListener('input', e=>{ gpsMetodo = 'manual'; if(e.target.value.length > 12) separarCoordenadasColadas(e.target.value); });
+$('lngManual').addEventListener('input', e=>{ gpsMetodo = 'manual'; if(e.target.value.length > 12) separarCoordenadasColadas(e.target.value); });
+
+/* ============ Membros da família ============ */
+let contadorMembros = 0;
+const PARENTESCOS = ['Pessoa de referência','Cônjuge/companheiro(a)','Filho(a)','Enteado(a)','Neto(a)/Bisneto(a)','Pai/Mãe','Sogro(a)','Irmão/Irmã','Genro/Nora','Outro parente','Não parente'];
+const ESCOLARIDADES = ['Nunca frequentou escola','Creche/Educação infantil','Fundamental incompleto','Fundamental completo','Médio incompleto','Médio completo','Superior incompleto','Superior completo','EJA','Não sabe informar'];
+
+function idadeDe(iso){
+  if(!iso) return null;
+  const n = new Date(iso+'T12:00:00');
+  if(isNaN(n)) return null;
+  const hoje = new Date();
+  let idade = hoje.getFullYear()-n.getFullYear();
+  const m = hoje.getMonth()-n.getMonth();
+  if(m<0 || (m===0 && hoje.getDate()<n.getDate())) idade--;
+  return idade>=0 && idade<130 ? idade : null;
+}
+function faixaBadge(idade){
+  if(idade===null) return '';
+  if(idade<=6) return 'Primeira infância';
+  if(idade>=60) return 'Pessoa idosa';
+  if(idade>=15 && idade<=17) return 'Adolescente';
+  return '';
+}
+
+function addMembro(dados){
+  contadorMembros++;
+  const div = document.createElement('div');
+  div.className='membro';
+  div.innerHTML = `
+    <span class="membro-num">Membro ${contadorMembros}</span>
+    <span class="idade-badge"></span>
+    <button type="button" class="remover">Remover</button>
+    <div class="campo"><label class="rotulo">Nome completo</label><input type="text" class="m-nome"></div>
+    <div class="campo linha2">
+      <div><label class="rotulo">Data de nascimento <span class="m-idadeInfo" style="font-weight:400;color:var(--ink-soft)"></span></label><input type="date" class="m-nasc"></div>
+      <div><label class="rotulo">Sexo</label>
+        <select class="m-sexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Feminino</option></select>
+      </div>
+    </div>
+    <div class="campo linha2">
+      <div><label class="rotulo">Parentesco com a pessoa de referência</label>
+        <select class="m-parentesco"><option value="">—</option>${PARENTESCOS.map(p=>`<option>${p}</option>`).join('')}</select>
+      </div>
+      <div><label class="rotulo">Escolaridade</label>
+        <select class="m-escolaridade"><option value="">—</option>${ESCOLARIDADES.map(e=>`<option>${e}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="campo linha2">
+      <div><label class="rotulo">Ocupação</label><input type="text" class="m-ocupacao" placeholder="Ex.: pescador, agricultora, do lar"></div>
+      <div><label class="rotulo">Renda mensal (R$) — sem contar benefícios</label><input type="number" class="m-renda" inputmode="decimal" step="0.01" placeholder="0,00"></div>
+    </div>
+    <div class="campo">
+      <label class="rotulo">Documentação civil a providenciar <span style="font-weight:400;color:var(--ink-soft)">(marque só o que FALTA)</span></label>
+      <div class="doc-linha">
+        <label class="doc-chip"><input type="checkbox" class="m-doc" value="Certidão de Nascimento"> CN</label>
+        <label class="doc-chip"><input type="checkbox" class="m-doc" value="RG"> RG</label>
+        <label class="doc-chip"><input type="checkbox" class="m-doc" value="CPF"> CPF</label>
+        <label class="doc-chip"><input type="checkbox" class="m-doc" value="CTPS"> CTPS</label>
+      </div>
+    </div>`;
+  div.querySelector('.remover').addEventListener('click',()=>{ div.remove(); renumerar(); calcPerCapita(); hintComposicao(); autoSalvar(); });
+  div.querySelector('.m-nasc').addEventListener('input',()=>{ atualizarIdade(div); hintComposicao(); });
+  div.querySelector('.m-renda').addEventListener('input', calcPerCapita);
+  div.querySelectorAll('.m-doc').forEach(c=>c.addEventListener('change', checarDocs));
+  if(dados){
+    div.querySelector('.m-nome').value=dados.nome||'';
+    div.querySelector('.m-nasc').value=dados.nascimento||'';
+    div.querySelector('.m-sexo').value=dados.sexo||'';
+    div.querySelector('.m-parentesco').value=dados.parentesco||'';
+    div.querySelector('.m-escolaridade').value=dados.escolaridade||'';
+    div.querySelector('.m-ocupacao').value=dados.ocupacao||'';
+    div.querySelector('.m-renda').value=dados.renda||'';
+    (dados.docs_pendentes||[]).forEach(v=>{
+      const c=[...div.querySelectorAll('.m-doc')].find(x=>x.value===v); if(c) c.checked=true;
+    });
+    atualizarIdade(div);
+  }
+  $('listaMembros').appendChild(div);
+}
+function atualizarIdade(div){
+  const idade = idadeDe(div.querySelector('.m-nasc').value);
+  const info = div.querySelector('.m-idadeInfo');
+  const badge = div.querySelector('.idade-badge');
+  if(idade!==null){
+    info.textContent = `(${idade} ano${idade===1?'':'s'})`;
+    const f = faixaBadge(idade);
+    if(f){ badge.textContent=f; badge.style.display='inline-block'; }
+    else badge.style.display='none';
+  } else { info.textContent=''; badge.style.display='none'; }
+}
+function renumerar(){
+  contadorMembros=0;
+  document.querySelectorAll('#listaMembros .membro').forEach(m=>{
+    contadorMembros++;
+    m.querySelector('.membro-num').textContent='Membro '+contadorMembros;
+  });
+}
+$('btnAddMembro').addEventListener('click',()=>addMembro());
+
+function membrosDados(){
+  return [...document.querySelectorAll('#listaMembros .membro')].map(m=>({
+    nome:m.querySelector('.m-nome').value,
+    nascimento:m.querySelector('.m-nasc').value,
+    idade:idadeDe(m.querySelector('.m-nasc').value),
+    sexo:m.querySelector('.m-sexo').value,
+    parentesco:m.querySelector('.m-parentesco').value,
+    escolaridade:m.querySelector('.m-escolaridade').value,
+    ocupacao:m.querySelector('.m-ocupacao').value,
+    renda:m.querySelector('.m-renda').value,
+    docs_pendentes:[...m.querySelectorAll('.m-doc:checked')].map(c=>c.value)
+  })).filter(m=>m.nome||m.nascimento||m.parentesco||m.ocupacao);
+}
+function hintComposicao(){
+  const ms = membrosDados();
+  const pi = ms.filter(m=>m.idade!==null && m.idade<=6).length;
+  const id60 = ms.filter(m=>m.idade!==null && m.idade>=60).length;
+  const adol = ms.filter(m=>m.idade!==null && m.idade>=15 && m.idade<=17).length;
+  const partes=[];
+  if(pi) partes.push(`${pi} criança(s) 0–6`);
+  if(adol) partes.push(`${adol} adolescente(s) 15–17`);
+  if(id60) partes.push(`${id60} pessoa(s) 60+`);
+  $('hintPrioritarios').textContent = partes.length ? `Detectado pela composição: ${partes.join(' · ')} — confira os públicos prioritários abaixo e as demandas SCFV/PCF (Bloco 6).` : '';
+}
+function checarDocs(){
+  const algumaPendencia = document.querySelector('#listaMembros .m-doc:checked');
+  if(algumaPendencia && !$('encDocCivil').checked){
+    $('encDocCivil').checked = true;
+    toast('Encaminhamento "Documentação civil" marcado automaticamente (Bloco 7)');
+  }
+}
+
+/* ============ Renda per capita ============ */
+function calcPerCapita(){
+  const ms = membrosDados();
+  const somaMembros = ms.reduce((s,m)=>s+(parseFloat(m.renda)||0),0);
+  const outras = parseFloat($('outrasRendas').value)||0;
+  const total = somaMembros + outras;
+  const qtd = parseInt($('qtdPessoas').value) || ms.length || 0;
+  const placa = $('placaPerCapita');
+  if(qtd>0 && (total>0 || ms.some(m=>m.renda!==''))){
+    const pc = total/qtd;
+    $('perCapitaValor').textContent = 'R$ ' + pc.toFixed(2).replace('.',',');
+    if(pc<=CONFIG.LINHA_POBREZA){
+      placa.classList.add('alertando');
+      $('perCapitaDet').textContent = `Renda total R$ ${total.toFixed(2).replace('.',',')} ÷ ${qtd} pessoa(s). ABAIXO da linha de pobreza (R$ ${CONFIG.LINHA_POBREZA}) — perfil prioritário para inclusão/atualização no CadÚnico e Bolsa Família.`;
+    } else {
+      placa.classList.remove('alertando');
+      $('perCapitaDet').textContent = `Renda total R$ ${total.toFixed(2).replace('.',',')} ÷ ${qtd} pessoa(s). Acima da linha de pobreza (R$ ${CONFIG.LINHA_POBREZA}). Confirme a faixa de renda no Bloco 1. Benefícios sociais não entram no cálculo.`;
+    }
+  } else {
+    placa.classList.remove('alertando');
+    $('perCapitaValor').textContent = 'R$ —';
+    $('perCapitaDet').textContent = 'Preencha a renda dos membros (Bloco 2) e o nº de pessoas para calcular. Não inclua Bolsa Família/BPC no cálculo — siga a regra do CadÚnico.';
+  }
+}
+$('qtdPessoas').addEventListener('input', ()=>{ calcPerCapita(); });
+$('outrasRendas').addEventListener('input', calcPerCapita);
+
+/* ============ Gates e painéis condicionais ============ */
+function radio(name){ const r=document.querySelector(`input[name="${name}"]:checked`); return r?r.value:''; }
+function marcados(name){ return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(i=>i.value); }
+
+function aplicarGates(){
+  // Resultado da visita
+  const res = radio('resultadoVisita');
+  const realizado = res==='Atendimento realizado';
+  document.body.classList.toggle('modo-tentativa', !!res && !realizado);
+  $('painelTentativa').classList.toggle('hidden', !res || realizado);
+  $('campoConsent').classList.toggle('hidden', !realizado);
+  // Consentimento
+  $('avisoRecusa').classList.toggle('hidden', radio('consentimento')!=='Recusou');
+  // CadÚnico
+  const cad = radio('possuiCad');
+  $('avisoSemCad').classList.toggle('hidden', cad!=='Não');
+  if(cad==='Não' && !$('encCadInclusao').checked){
+    $('encCadInclusao').checked = true;
+  }
+  // Indígena → etnia
+  const ind = $('chkIndigena').checked;
+  $('campoEtnia').classList.toggle('hidden', !ind);
+  $('campoAldeia').classList.toggle('hidden', !ind);
+  // Gestante
+  $('painelGestante').classList.toggle('hidden', !$('chkGestante').checked);
+  // PCD / acamada → cuidado
+  const cuidado = $('chkPcd').checked || $('chkAcamada').checked;
+  $('painelCuidado').classList.toggle('hidden', !cuidado);
+  $('campoDefTipo').classList.toggle('hidden', !$('chkPcd').checked);
+  // Violações → PAEFI automático
+  const violacoesMarcadas = marcados('violacoes').filter(v=>v!=='Nenhuma violação aparente identificada');
+  if(violacoesMarcadas.length && !$('encPaefi').checked){
+    $('encPaefi').checked = true;
+  }
+}
+
+/* ============ Classificação automática de prioridade ============ */
+function atualizarPrioridade(){
+  const alertas = document.querySelectorAll('input[data-alerta]:checked').length;
+  const atencoes = document.querySelectorAll('input[data-atencao]:checked').length;
+  const compulsorias = document.querySelectorAll('input[data-compulsoria]:checked').length;
+  const chip=$('prioChip'), info=$('prioInfo');
+  chip.classList.remove('prio-padrao','prio-media','prio-alta');
+  if(alertas>0){
+    chip.classList.add('prio-alta');
+    chip.textContent='Prioridade: ALTA';
+    info.textContent=`${alertas} alerta(s) grave(s) · ${atencoes} ponto(s) de atenção`;
+  } else if(atencoes>0){
+    chip.classList.add('prio-media');
+    chip.textContent='Prioridade: média';
+    info.textContent=`${atencoes} ponto(s) de atenção marcados`;
+  } else {
+    chip.classList.add('prio-padrao');
+    chip.textContent='Prioridade: padrão';
+    info.textContent='Nenhum alerta marcado';
+  }
+  $('bannerComp').classList.toggle('mostra', compulsorias>0);
+}
+
+/* ============ Coleta de dados ============ */
+function coletar(){
+  return {
+    versao:'Ficha Busca Ativa v3.5 — Vigilância Socioassistencial Oriximiná',
+    id_atendimento: fichaId,
+    visita:{
+      data:$('dataVisita').value, equipe:$('equipe').value,
+      resultado: radio('resultadoVisita'),
+      tentativa:{
+        info:$('tentativaInfo').value,
+        nova_tentativa: radio('novaTentativa'),
+        quando:$('tentativaQuando').value
+      },
+      consentimento: radio('consentimento'),
+      prioridade:$('prioChip').textContent.replace('Prioridade: ',''),
+      notificacao_compulsoria: document.querySelectorAll('input[data-compulsoria]:checked').length>0,
+      tecnico:$('tecnico').value, funcao:$('funcao').value, demais_profissionais:$('tecnico2').value
+    },
+    geo:{
+      lat:$('lat').value||$('latManual').value, lng:$('lng').value||$('lngManual').value,
+      precisao_m:$('precisao').value, capturado_em:$('gpsHora').value,
+      metodo_captura: ($('lat').value||$('latManual').value) ? (gpsMetodo||'manual') : '',
+      acesso:radio('acesso'), tempo_deslocamento:$('tempoDesloc').value,
+      ponto_referencia:$('pontoRef').value, condicoes_acesso:$('condAcesso').value
+    },
+    identificacao:{
+      possui_cadunico: radio('possuiCad'),
+      codigo_familiar:$('codFamiliar').value, nis:$('nis').value,
+      nome_referencia:$('nomeRef').value, nao_identificada:$('naoIdent').checked,
+      apelido:$('apelido').value, telefone:$('telefone').value,
+      ultima_atualizacao_cad:$('dataCad').value, endereco:$('endereco').value,
+      territorio:radio('territorio'), territorio_outro:$('territorioOutro').value,
+      identidade_comunidade:marcados('identidade'),
+      povo_etnia:$('povoEtnia').value, residente_aldeia:$('aldeiaResidente').value,
+      cras:radio('cras'),
+      renda_sistema:$('rendaSistema').value, faixa_renda:$('faixaRenda').value,
+      familia_acompanhada:radio('acompanhada')
+    },
+    composicao:{
+      qtd_pessoas:$('qtdPessoas').value, membros:membrosDados(),
+      publicos_prioritarios:marcados('prioritarios'),
+      gestacao:{ meses:$('gestMeses').value, pre_natal:radio('preNatal') },
+      deficiencia_tipos:marcados('defTipo'), responsavel_cuidado:$('cuidador').value,
+      beneficios:marcados('beneficios'), beneficio_outro:$('beneficioOutro').value
+    },
+    financeiro:{
+      motivo_desatualizacao:marcados('motivoDesat'), motivo_outro:$('motivoOutro').value,
+      fontes_renda:marcados('fontesRenda'), renda_outra:$('rendaOutra').value,
+      outras_rendas_familia:$('outrasRendas').value,
+      renda_per_capita_estimada: $('perCapitaValor').textContent.replace('R$ ','').replace(',','.'),
+      desemprego_buscando_vaga:radio('desemprego'),
+      despesas:{alimentacao:$('dAlimentacao').value, medicamentos:$('dMedicamentos').value,
+        energia:$('dEnergia').value, agua:$('dAgua').value, gas:$('dGas').value,
+        aluguel:$('dAluguel').value, outras:$('dOutras').value}
+    },
+    vulnerabilidades:{
+      inseguranca_alimentar:radio('alimentar'), educacao:marcados('educacao'),
+      saude:marcados('saude'), acompanhamento_saude:radio('acompSaude'),
+      afastamentos_convivio:marcados('afastamento'),
+      habitacao_territorio:marcados('habitacao')
+    },
+    escuta:{
+      violacoes:marcados('violacoes'),
+      territorio_convivencia:marcados('territorioConv'),
+      rede_apoio:marcados('rede'),
+      sintese:$('sintese').value, potencialidades:$('potencialidades').value
+    },
+    demandas:{ scfv:marcados('scfv'), pcf:marcados('pcf') },
+    encaminhamentos:{
+      assistencia_social:marcados('encAssist'), outras_politicas:marcados('encOutras'),
+      observacoes:$('obsAdicionais').value
+    }
+  };
+}
+
+/* ============ Restauração ============ */
+function limparFormulario(){
+  document.querySelectorAll('input[type=text],input[type=tel],input[type=number],input[type=date],input[type=datetime-local],textarea').forEach(i=>i.value='');
+  document.querySelectorAll('select').forEach(s=>s.value='');
+  document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(i=>i.checked=false);
+  $('listaMembros').innerHTML=''; contadorMembros=0; addMembro();
+  $('gpsCoords').textContent='— aguardando captura —';
+  $('gpsMeta').textContent='Toque no botão abaixo com o GPS do celular ligado. Funciona sem internet.';
+  $('dataVisita').value = agoraLocalISO();
+  aplicarGates(); atualizarPrioridade(); calcPerCapita(); hintComposicao();
+}
+
+function restaurar(d){
+  limparFormulario();
+  const setVal=(id,v)=>{ if(v!==undefined && v!==null && $(id)) $(id).value=v; };
+  const setRadio=(name,val)=>{ if(!val) return; const el=[...document.querySelectorAll(`input[name="${name}"]`)].find(e=>e.value===val); if(el) el.checked=true; };
+  const setChecks=(name,vals)=>{(vals||[]).forEach(v=>{ const el=[...document.querySelectorAll(`input[name="${name}"]`)].find(e=>e.value===v); if(el) el.checked=true; });};
+
+  fichaId = d.id_atendimento || gerarId(); mostrarId();
+
+  // visita
+  setVal('dataVisita', d.visita && d.visita.data); setVal('equipe', d.visita && d.visita.equipe);
+  if(d.visita){
+    setRadio('resultadoVisita', d.visita.resultado);
+    if(d.visita.tentativa){ setVal('tentativaInfo', d.visita.tentativa.info); setRadio('novaTentativa', d.visita.tentativa.nova_tentativa); setVal('tentativaQuando', d.visita.tentativa.quando); }
+    setRadio('consentimento', d.visita.consentimento);
+    setVal('tecnico', d.visita.tecnico); setVal('funcao', d.visita.funcao); setVal('tecnico2', d.visita.demais_profissionais);
+  }
+  // geo
+  if(d.geo){
+    gpsMetodo = d.geo.metodo_captura || '';
+    setVal('latManual', d.geo.lat); setVal('lngManual', d.geo.lng);
+    setVal('lat', d.geo.lat); setVal('lng', d.geo.lng);
+    setVal('precisao', d.geo.precisao_m); setVal('gpsHora', d.geo.capturado_em);
+    if(d.geo.lat && d.geo.lng){
+      $('gpsCoords').textContent = `${d.geo.lat}, ${d.geo.lng}`;
+      $('gpsMeta').textContent = d.geo.capturado_em ? `Capturado em ${d.geo.capturado_em}` : 'Coordenadas restauradas do rascunho';
+    }
+    setRadio('acesso', d.geo.acesso);
+    setVal('tempoDesloc', d.geo.tempo_deslocamento); setVal('pontoRef', d.geo.ponto_referencia); setVal('condAcesso', d.geo.condicoes_acesso);
+  }
+  // identificação
+  if(d.identificacao){
+    const i=d.identificacao;
+    setRadio('possuiCad', i.possui_cadunico);
+    setVal('codFamiliar', i.codigo_familiar); setVal('nis', i.nis);
+    setVal('nomeRef', i.nome_referencia); if(i.nao_identificada) $('naoIdent').checked=true;
+    setVal('apelido', i.apelido); setVal('telefone', i.telefone);
+    setVal('dataCad', i.ultima_atualizacao_cad); setVal('endereco', i.endereco);
+    setRadio('territorio', i.territorio); setVal('territorioOutro', i.territorio_outro);
+    setChecks('identidade', i.identidade_comunidade);
+    setVal('povoEtnia', i.povo_etnia); setVal('aldeiaResidente', i.residente_aldeia);
+    setRadio('cras', i.cras);
+    setVal('rendaSistema', i.renda_sistema); setVal('faixaRenda', i.faixa_renda);
+    setRadio('acompanhada', i.familia_acompanhada);
+  }
+  // composição
+  if(d.composicao){
+    const c=d.composicao;
+    setVal('qtdPessoas', c.qtd_pessoas);
+    if(c.membros && c.membros.length){ $('listaMembros').innerHTML=''; contadorMembros=0; c.membros.forEach(m=>addMembro(m)); }
+    setChecks('prioritarios', c.publicos_prioritarios);
+    if(c.gestacao){ setVal('gestMeses', c.gestacao.meses); setRadio('preNatal', c.gestacao.pre_natal); }
+    setChecks('defTipo', c.deficiencia_tipos); setVal('cuidador', c.responsavel_cuidado);
+    setChecks('beneficios', c.beneficios); setVal('beneficioOutro', c.beneficio_outro);
+  }
+  // financeiro
+  if(d.financeiro){
+    const f=d.financeiro;
+    setChecks('motivoDesat', f.motivo_desatualizacao); setVal('motivoOutro', f.motivo_outro);
+    setChecks('fontesRenda', f.fontes_renda); setVal('rendaOutra', f.renda_outra);
+    setVal('outrasRendas', f.outras_rendas_familia);
+    setRadio('desemprego', f.desemprego_buscando_vaga);
+    if(f.despesas){
+      setVal('dAlimentacao', f.despesas.alimentacao); setVal('dMedicamentos', f.despesas.medicamentos);
+      setVal('dEnergia', f.despesas.energia); setVal('dAgua', f.despesas.agua);
+      setVal('dGas', f.despesas.gas); setVal('dAluguel', f.despesas.aluguel); setVal('dOutras', f.despesas.outras);
+    }
+  }
+  // vulnerabilidades
+  if(d.vulnerabilidades){
+    const v=d.vulnerabilidades;
+    setRadio('alimentar', v.inseguranca_alimentar);
+    setChecks('educacao', v.educacao); setChecks('saude', v.saude);
+    setRadio('acompSaude', v.acompanhamento_saude);
+    setChecks('afastamento', v.afastamentos_convivio);
+    setChecks('habitacao', v.habitacao_territorio);
+  }
+  // escuta
+  if(d.escuta){
+    setChecks('violacoes', d.escuta.violacoes);
+    setChecks('territorioConv', d.escuta.territorio_convivencia);
+    setChecks('rede', d.escuta.rede_apoio);
+    setVal('sintese', d.escuta.sintese); setVal('potencialidades', d.escuta.potencialidades);
+  }
+  // demandas / encaminhamentos
+  if(d.demandas){ setChecks('scfv', d.demandas.scfv); setChecks('pcf', d.demandas.pcf); }
+  if(d.encaminhamentos){
+    setChecks('encAssist', d.encaminhamentos.assistencia_social);
+    setChecks('encOutras', d.encaminhamentos.outras_politicas);
+    setVal('obsAdicionais', d.encaminhamentos.observacoes);
+  }
+  aplicarGates(); atualizarPrioridade(); calcPerCapita(); hintComposicao();
+}
+
+/* ============ Múltiplas fichas ============ */
+function salvarFichaAtual(silencioso){
+  if(!fichaId){ fichaId = gerarId(); mostrarId(); }
+  const dados = coletar();
+  const fichas = lerFichas();
+  fichas[fichaId] = { dados, salvo_em: new Date().toISOString() };
+  gravarFichas(fichas);
+  atualizarContagem();
+  if(!silencioso) toast('Ficha salva neste aparelho');
+}
+let timerAuto = null;
+function autoSalvar(){
+  clearTimeout(timerAuto);
+  timerAuto = setTimeout(()=>salvarFichaAtual(true), 900);
+}
+function atualizarContagem(){
+  $('contFichas').textContent = Object.keys(lerFichas()).length;
+}
+function novaFicha(){
+  salvarFichaAtual(true);
+  fichaId = gerarId(); mostrarId();
+  limparFormulario();
+  window.scrollTo({top:0});
+  toast('Nova ficha iniciada — a anterior está em "Fichas salvas"');
+  atualizarContagem();
+}
+$('btnNova').addEventListener('click', novaFicha);
+$('btnSalvar').addEventListener('click', ()=>salvarFichaAtual(false));
+
+function renderListaFichas(){
+  const fichas = lerFichas();
+  const cont = $('listaFichas');
+  cont.innerHTML='';
+  const ids = Object.keys(fichas).sort((a,b)=>(fichas[b].salvo_em||'').localeCompare(fichas[a].salvo_em||''));
+  if(!ids.length){ cont.innerHTML='<div class="aviso">Nenhuma ficha salva ainda.</div>'; return; }
+  ids.forEach(id=>{
+    const f = fichas[id];
+    const d = f.dados||{};
+    const nome = (d.identificacao&&d.identificacao.nome_referencia)||'(sem nome)';
+    const com = (d.identificacao&&d.identificacao.endereco)||'';
+    const prio = (d.visita&&d.visita.prioridade)||'';
+    const res = (d.visita&&d.visita.resultado)||'';
+    const quando = f.salvo_em? new Date(f.salvo_em).toLocaleString('pt-BR') : '';
+    const div = document.createElement('div');
+    div.className='ficha-item';
+    div.innerHTML = `
+      <div class="fi-info">
+        <div class="fi-nome">${nome}${id===fichaId?' <span style="color:var(--verde-rio)">(aberta)</span>':''}</div>
+        <div class="fi-meta">${id} · ${com||'—'} · ${res||'—'} · ${prio||'—'} · salvo ${quando}</div>
+      </div>
+      <div class="fi-acoes">
+        <button type="button" class="fi-abrir">Abrir</button>
+        <button type="button" class="fi-excluir">Excluir</button>
+      </div>`;
+    div.querySelector('.fi-abrir').addEventListener('click', ()=>{
+      salvarFichaAtual(true);
+      restaurar(f.dados);
+      $('modalFichas').classList.remove('aberto');
+      toast('Ficha aberta');
+    });
+    div.querySelector('.fi-excluir').addEventListener('click', ()=>{
+      if(!confirmouExclusao(id)) return;
+      const fs = lerFichas(); delete fs[id]; gravarFichas(fs);
+      atualizarContagem(); renderListaFichas();
+    });
+    cont.appendChild(div);
+  });
+}
+// exclusão em dois toques (evita diálogo bloqueante de confirm())
+const pendenteExclusao = {};
+function confirmouExclusao(id){
+  if(pendenteExclusao[id]){ delete pendenteExclusao[id]; return true; }
+  pendenteExclusao[id]=true;
+  toast('Toque em Excluir de novo para confirmar');
+  setTimeout(()=>delete pendenteExclusao[id], 4000);
+  return false;
+}
+$('btnFichas').addEventListener('click', ()=>{ renderListaFichas(); $('modalFichas').classList.add('aberto'); });
+$('btnFecharFichas').addEventListener('click', ()=>$('modalFichas').classList.remove('aberto'));
+$('modalFichas').addEventListener('click', e=>{ if(e.target===$('modalFichas')) $('modalFichas').classList.remove('aberto'); });
+
+/* ============ Validação ============ */
+function validar(){
+  const faltas = [];
+  const res = radio('resultadoVisita');
+  if(!res) faltas.push('Resultado da visita (Bloco 0)');
+  if(res==='Atendimento realizado'){
+    if(!radio('consentimento')) faltas.push('Consentimento da família (Bloco 0)');
+    if(!$('nomeRef').value.trim() && !$('naoIdent').checked) faltas.push('Nome da pessoa de referência — ou marque "não foi possível identificar" (Bloco 1)');
+  }
+  if(!$('tecnico').value.trim()) faltas.push('Nome do técnico responsável (Bloco 8)');
+  return faltas;
+}
+
+/* ============ Resumo em texto ============ */
+function gerarResumo(){
+  const d = coletar();
+  const l = [];
+  l.push('FICHA DE BUSCA ATIVA E ESCUTA QUALIFICADA v3.5');
+  l.push('Vigilância Socioassistencial — Oriximiná/PA');
+  l.push('='.repeat(46));
+  l.push(`ID DO ATENDIMENTO: ${d.id_atendimento||'—'}`);
+  l.push(`CLASSIFICAÇÃO: ${d.visita.prioridade.toUpperCase()}`);
+  if(d.visita.notificacao_compulsoria) l.push('*** SITUAÇÃO DE NOTIFICAÇÃO COMPULSÓRIA — ACIONAR SGD ***');
+  l.push(`RESULTADO DA VISITA: ${d.visita.resultado||'—'}`);
+  if(d.visita.resultado && d.visita.resultado!=='Atendimento realizado'){
+    if(d.visita.tentativa.info) l.push(`Apurado na tentativa: ${d.visita.tentativa.info}`);
+    l.push(`Nova tentativa: ${d.visita.tentativa.nova_tentativa||'—'}${d.visita.tentativa.quando?' — '+d.visita.tentativa.quando:''}`);
+  } else if(d.visita.consentimento){
+    l.push(`Consentimento: ${d.visita.consentimento}`);
+  }
+  l.push('');
+  l.push('— GEORREFERENCIAMENTO —');
+  l.push(`Coordenadas: ${d.geo.lat||'—'}, ${d.geo.lng||'—'}${d.geo.precisao_m?' (±'+d.geo.precisao_m+' m)':''}${d.geo.metodo_captura?' · método: '+d.geo.metodo_captura:''}`);
+  if(d.geo.lat&&d.geo.lng) l.push(`Mapa: https://maps.google.com/?q=${d.geo.lat},${d.geo.lng}`);
+  l.push(`Acesso: ${d.geo.acesso||'—'} · Deslocamento: ${d.geo.tempo_deslocamento||'—'}`);
+  if(d.geo.ponto_referencia) l.push(`Referência: ${d.geo.ponto_referencia}`);
+  if(d.geo.condicoes_acesso) l.push(`Condições no dia: ${d.geo.condicoes_acesso}`);
+  l.push('');
+  l.push('— IDENTIFICAÇÃO —');
+  l.push(`Possui CadÚnico: ${d.identificacao.possui_cadunico||'—'}`);
+  l.push(`Cód. Familiar: ${d.identificacao.codigo_familiar||'—'} · NIS: ${d.identificacao.nis||'—'}`);
+  l.push(`Referência: ${d.identificacao.nome_referencia||(d.identificacao.nao_identificada?'NÃO IDENTIFICADA':'—')}${d.identificacao.apelido?' ("'+d.identificacao.apelido+'")':''} · Tel: ${d.identificacao.telefone||'—'}`);
+  l.push(`Comunidade: ${d.identificacao.endereco||'—'} (${d.identificacao.territorio||'—'})`);
+  if(d.identificacao.identidade_comunidade.length){
+    let idt = d.identificacao.identidade_comunidade.join(', ');
+    if(d.identificacao.povo_etnia) idt += ` — povo/etnia: ${d.identificacao.povo_etnia}`;
+    if(d.identificacao.residente_aldeia) idt += ` (${d.identificacao.residente_aldeia})`;
+    l.push(`Identidade: ${idt}`);
+  }
+  l.push(`CRAS: ${d.identificacao.cras||'—'} · Últ. atualização CadÚnico: ${d.identificacao.ultima_atualizacao_cad||'—'}`);
+  l.push(`Renda no sistema: R$ ${d.identificacao.renda_sistema||'—'} · Faixa: ${d.identificacao.faixa_renda||'—'}`);
+  l.push(`Família acompanhada (PAIF/PAEFI): ${d.identificacao.familia_acompanhada||'—'}`);
+  l.push('');
+  l.push('— COMPOSIÇÃO FAMILIAR —');
+  l.push(`Pessoas na residência: ${d.composicao.qtd_pessoas||'—'}`);
+  d.composicao.membros.forEach((m,i)=>{
+    const docs = m.docs_pendentes.length? ` | FALTA DOC: ${m.docs_pendentes.join('/')}` : '';
+    l.push(`${i+1}. ${m.nome||'—'} | ${m.nascimento||'—'}${m.idade!==null?' ('+m.idade+'a)':''} | ${m.sexo||'—'} | ${m.parentesco||'—'} | ${m.escolaridade||'—'} | ${m.ocupacao||'—'}${m.renda?' R$ '+m.renda:''}${docs}`);
+  });
+  if(d.composicao.publicos_prioritarios.length) l.push(`Públicos prioritários: ${d.composicao.publicos_prioritarios.join('; ')}`);
+  if(d.composicao.gestacao.meses||d.composicao.gestacao.pre_natal) l.push(`Gestação: ${d.composicao.gestacao.meses||'?'} mês(es) · Pré-natal: ${d.composicao.gestacao.pre_natal||'—'}`);
+  if(d.composicao.deficiencia_tipos.length) l.push(`Deficiência(s): ${d.composicao.deficiencia_tipos.join('; ')}`);
+  if(d.composicao.responsavel_cuidado) l.push(`Responsável pelo cuidado: ${d.composicao.responsavel_cuidado}`);
+  l.push(`Benefícios: ${d.composicao.beneficios.join('; ')||'—'}${d.composicao.beneficio_outro?' ('+d.composicao.beneficio_outro+')':''}`);
+  l.push('');
+  l.push('— FINANCEIRO E TRABALHO —');
+  if(d.financeiro.motivo_desatualizacao.length) l.push(`Motivo desatualização: ${d.financeiro.motivo_desatualizacao.join('; ')}${d.financeiro.motivo_outro?' — '+d.financeiro.motivo_outro:''}`);
+  l.push(`Fontes de renda: ${d.financeiro.fontes_renda.join('; ')||'—'}`);
+  l.push(`Renda per capita estimada: R$ ${d.financeiro.renda_per_capita_estimada||'—'}`);
+  l.push(`Desemprego buscando vaga: ${d.financeiro.desemprego_buscando_vaga||'—'}`);
+  const dp=d.financeiro.despesas;
+  const desp=[['Alimentação',dp.alimentacao],['Medicamentos',dp.medicamentos],['Energia',dp.energia],['Água',dp.agua],['Gás',dp.gas],['Aluguel',dp.aluguel]].filter(x=>x[1]).map(x=>`${x[0]}: R$ ${x[1]}`).join(' · ');
+  if(desp) l.push(`Despesas mensais: ${desp}`);
+  if(dp.outras) l.push(`Outras despesas: ${dp.outras}`);
+  l.push('');
+  l.push('— VULNERABILIDADES —');
+  l.push(`Insegurança alimentar: ${d.vulnerabilidades.inseguranca_alimentar||'—'}`);
+  if(d.vulnerabilidades.educacao.length) l.push(`Educação/proteção: ${d.vulnerabilidades.educacao.join('; ')}`);
+  if(d.vulnerabilidades.saude.length) l.push(`Saúde: ${d.vulnerabilidades.saude.join('; ')}`);
+  l.push(`Acompanhamento UBS/ACS: ${d.vulnerabilidades.acompanhamento_saude||'—'}`);
+  if(d.vulnerabilidades.afastamentos_convivio.length) l.push(`Afastamentos do convívio: ${d.vulnerabilidades.afastamentos_convivio.join('; ')}`);
+  if(d.vulnerabilidades.habitacao_territorio.length) l.push(`Habitação/território: ${d.vulnerabilidades.habitacao_territorio.join('; ')}`);
+  l.push('');
+  l.push('— ESCUTA QUALIFICADA —');
+  if(d.escuta.violacoes.length) l.push(`Violações (sigiloso): ${d.escuta.violacoes.join('; ')}`);
+  if(d.escuta.territorio_convivencia.length) l.push(`Território/convivência: ${d.escuta.territorio_convivencia.join('; ')}`);
+  if(d.escuta.rede_apoio.length) l.push(`Rede de apoio: ${d.escuta.rede_apoio.join('; ')}`);
+  if(d.escuta.sintese) l.push(`Síntese: ${d.escuta.sintese}`);
+  if(d.escuta.potencialidades) l.push(`Potencialidades: ${d.escuta.potencialidades}`);
+  l.push('');
+  l.push('— DEMANDAS DE SERVIÇOS —');
+  l.push(`SCFV: ${d.demandas.scfv.join('; ')||'—'}`);
+  l.push(`PCF: ${d.demandas.pcf.join('; ')||'—'}`);
+  l.push('');
+  l.push('— ENCAMINHAMENTOS —');
+  if(d.encaminhamentos.assistencia_social.length) l.push(`Assistência Social: ${d.encaminhamentos.assistencia_social.join('; ')}`);
+  if(d.encaminhamentos.outras_politicas.length) l.push(`Outras políticas: ${d.encaminhamentos.outras_politicas.join('; ')}`);
+  if(d.encaminhamentos.observacoes) l.push(`Obs.: ${d.encaminhamentos.observacoes}`);
+  l.push('');
+  l.push('— VISITA —');
+  l.push(`Data: ${d.visita.data?d.visita.data.replace('T',' às '):'—'} · Equipe: ${d.visita.equipe||'—'}`);
+  l.push(`Técnico: ${d.visita.tecnico||'—'} (${d.visita.funcao||'—'})${d.visita.demais_profissionais?' · Equipe presente: '+d.visita.demais_profissionais:''}`);
+  return l.join('\n');
+}
+
+/* ============ Finalizar / exportar ============ */
+$('btnResumo').addEventListener('click',()=>{
+  const faltas = validar();
+  if(faltas.length){
+    toast('Antes de finalizar, preencha: ' + faltas[0]);
+    return;
+  }
+  salvarFichaAtual(true);
+  $('resumoTexto').value = gerarResumo();
+  $('modalFundo').classList.add('aberto');
+});
+$('btnFechar').addEventListener('click',()=>$('modalFundo').classList.remove('aberto'));
+$('modalFundo').addEventListener('click',e=>{ if(e.target===$('modalFundo')) $('modalFundo').classList.remove('aberto'); });
+
+$('btnCopiar').addEventListener('click',()=>{
+  const t=$('resumoTexto'); t.select(); t.setSelectionRange(0,999999);
+  try{ navigator.clipboard.writeText(t.value).then(()=>toast('Copiado!')); }
+  catch(e){ document.execCommand('copy'); toast('Copiado!'); }
+});
+$('btnWhats').addEventListener('click',()=>{
+  window.open('https://wa.me/?text='+encodeURIComponent($('resumoTexto').value),'_blank');
+});
+/* Salvamento de arquivo em três modos:
+   1) versão publicada (link): mecanismo da plataforma (window.claude.use('downloads'))
+   2) arquivo local / servidor comum: download clássico via blob
+   3) fallback: copiar o JSON para a área de transferência */
+async function obterDownloads(){
+  try{
+    if(window.claude && typeof window.claude.use === 'function'){
+      return await window.claude.use('downloads');
+    }
+  }catch(e){}
+  return null;
+}
+function copiarFallback(conteudo){
+  try{
+    navigator.clipboard.writeText(conteudo).then(
+      ()=>toast('Não foi possível salvar o arquivo — JSON copiado; cole e envie por mensagem'),
+      ()=>toast('Não foi possível salvar nem copiar — use “Copiar texto” no resumo')
+    );
+  }catch(e){ toast('Não foi possível salvar nem copiar — use “Copiar texto” no resumo'); }
+}
+async function baixarJSON(obj, nome){
+  const conteudo = JSON.stringify(obj, null, 2);
+  const cap = await obterDownloads();
+  if(cap){
+    try{
+      await cap.save({filename: nome, data: conteudo});
+      toast('Arquivo salvo');
+    }catch(err){
+      if(err && err.code === 'declined') toast('Salvamento cancelado');
+      else if(err && err.code === 'rate_limited') toast('Aguarde alguns segundos e tente de novo');
+      else copiarFallback(conteudo);
+    }
+    return true;
+  }
+  try{
+    const blob = new Blob([conteudo],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = nome; a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Arquivo baixado');
+  }catch(e){ copiarFallback(conteudo); }
+  return true;
+}
+$('btnJson').addEventListener('click',()=>{
+  const d = coletar();
+  baixarJSON(d, `busca_ativa_${d.id_atendimento||'sem_id'}.json`);
+});
+$('btnJsonTodas').addEventListener('click',()=>{
+  const fichas = lerFichas();
+  const lista = Object.values(fichas).map(f=>f.dados);
+  if(!lista.length){ toast('Nenhuma ficha salva para exportar'); return; }
+  baixarJSON({
+    versao:'Ficha Busca Ativa v3.5 — lote de expedição',
+    exportado_em: new Date().toISOString(),
+    total_fichas: lista.length,
+    fichas: lista
+  }, `busca_ativa_lote_${new Date().toISOString().slice(0,10)}.json`);
+});
+
+/* ============ Modo aplicativo — PWA (v3.5) ============
+   • Android/Chrome: botão "Instalar app" usa o pedido nativo de instalação
+   • iPhone/Safari: mostra o passo a passo "Compartilhar → Adicionar à Tela de Início"
+   • Pede armazenamento persistente (evita que o sistema apague as fichas salvas)
+   • Avisa quando há versão nova e mostra o selo "Sem internet" */
+let pedidoInstalacao = null;
+const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const jaInstalado = () =>
+  (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+
+function iniciarModoApp(){
+  if(dentroDeVisualizador) return;
+  // Botão de instalar: aparece quando ainda não está instalado
+  // iPhone não tem pedido automático de instalação: o botão abre o passo a passo
+  if(ehIOS && !jaInstalado()) $('btnInstalar').classList.remove('hidden');
+  window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault(); pedidoInstalacao = e;
+    $('btnInstalar').classList.remove('hidden');
+  });
+  window.addEventListener('appinstalled', ()=>{
+    pedidoInstalacao = null; $('btnInstalar').classList.add('hidden');
+    toast('Aplicativo instalado! Procure o ícone “Busca Ativa”');
+  });
+  // Indicador de conexão
+  const selo = ()=> $('seloOffline').classList.toggle('hidden', navigator.onLine !== false);
+  window.addEventListener('online', selo); window.addEventListener('offline', selo); selo();
+  // Protege as fichas salvas contra limpeza automática do navegador
+  try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{}); }catch(e){}
+  // Service worker: cache offline + aviso de atualização
+  if(window.isSecureContext && 'serviceWorker' in navigator){
+    let recarregando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(recarregando) return; recarregando = true;
+      try{ salvarFichaAtual(true); }catch(e){}
+      location.reload();
+    });
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      const oferecer = sw=>{
+        if(!sw || !navigator.serviceWorker.controller || $('faixaAtualizar')) return;
+        const f = document.createElement('div');
+        f.className = 'faixa-atualizar'; f.id = 'faixaAtualizar';
+        f.innerHTML = '🔄 Nova versão da ficha disponível <button type="button">Atualizar</button>';
+        f.querySelector('button').addEventListener('click', ()=> sw.postMessage('atualizar'));
+        document.body.appendChild(f);
+      };
+      if(reg.waiting) oferecer(reg.waiting);
+      reg.addEventListener('updatefound', ()=>{
+        const novo = reg.installing;
+        novo && novo.addEventListener('statechange', ()=>{ if(novo.state === 'installed') oferecer(novo); });
+      });
+    }).catch(()=>{});
+  }
+}
+$('btnInstalar').addEventListener('click', async ()=>{
+  if(pedidoInstalacao){
+    pedidoInstalacao.prompt();
+    try{ await pedidoInstalacao.userChoice; }catch(e){}
+    pedidoInstalacao = null;
+    return;
+  }
+  $('instrIos').classList.toggle('hidden', !ehIOS);
+  $('instrOutros').classList.toggle('hidden', ehIOS);
+  $('modalInstalar').classList.add('aberto');
+});
+$('btnFecharInstalar').addEventListener('click', ()=>$('modalInstalar').classList.remove('aberto'));
+$('modalInstalar').addEventListener('click', e=>{ if(e.target===$('modalInstalar')) $('modalInstalar').classList.remove('aberto'); });
+$('btnCopiarLink').addEventListener('click', ()=>{
+  try{ navigator.clipboard.writeText(location.href.split('#')[0]).then(()=>toast('Endereço copiado')); }
+  catch(e){ toast(location.href); }
+});
+
+/* ============ Listeners globais ============ */
+document.addEventListener('change', ()=>{ aplicarGates(); atualizarPrioridade(); calcPerCapita(); autoSalvar(); });
+document.addEventListener('input', ()=>{ autoSalvar(); });
+
+/* ============ Inicialização ============ */
+(function init(){
+  // Ajuda do GPS conforme o modo de uso: arquivo local (file://) ou versão publicada (https://)
+  if(location.protocol === 'https:' || location.protocol === 'http:'){
+    $('ajudaArquivo').classList.add('hidden');
+    $('ajudaLink').classList.remove('hidden');
+  }
+  // Dentro de um visualizador, oferece a abertura em tela cheia (libera o pedido de permissão)
+  if(dentroDeVisualizador) $('btnTelaCheia').classList.remove('hidden');
+  iniciarModoApp();
+  $('dataVisita').value = agoraLocalISO();
+  addMembro();
+  const fichas = lerFichas();
+  const ids = Object.keys(fichas).sort((a,b)=>(fichas[b].salvo_em||'').localeCompare(fichas[a].salvo_em||''));
+  if(ids.length){
+    fichaId = ids[0];
+    restaurar(fichas[fichaId].dados);
+    toast(`Ficha ${fichaId} restaurada — use "Nova ficha" para iniciar outra`);
+  } else {
+    fichaId = gerarId();
+  }
+  mostrarId();
+  atualizarContagem();
+  aplicarGates(); atualizarPrioridade(); calcPerCapita(); hintComposicao();
+})();
+</script>
+
+</body></html>
