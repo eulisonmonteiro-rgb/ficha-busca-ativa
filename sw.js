@@ -3,7 +3,7 @@
    Depois disso abre e funciona sem sinal (expedições nos rios).
    Ao publicar uma nova versão, AUMENTE o número em VERSAO — o app avisa
    o técnico e atualiza no próximo toque em "Atualizar". */
-const VERSAO = 'v3.5.1';
+const VERSAO = 'v3.5.2';
 const CACHE = 'busca-ativa-' + VERSAO;
 const ARQUIVOS = [
   './',

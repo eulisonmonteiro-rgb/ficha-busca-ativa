@@ -337,7 +337,29 @@ details.ajuda-gps summary::-webkit-details-marker{display:none}
   details.bloco{page-break-inside:avoid}
   body{padding-bottom:0;background:#fff}
 }
+/* ---------- Aviso: aberta pelo WhatsApp / como arquivo ---------- */
+.aviso-whats{background:#FEF3C7;border-bottom:3px solid var(--barro);padding:14px 16px 16px;color:var(--ink);font-size:14px;line-height:1.45}
+.aviso-whats .aw-titulo{font-weight:800;font-size:15.5px;color:#7C2D12}
+.aviso-whats p{margin-top:6px}
+.aviso-whats .aw-acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.aviso-whats .aw-acoes a,.aviso-whats .aw-acoes button{flex:1 1 140px;display:flex;align-items:center;justify-content:center;
+  padding:12px;border-radius:10px;font:inherit;font-weight:800;font-size:14px;text-decoration:none;cursor:pointer;border:none}
+.aw-abrir{background:var(--verde-rio);color:#fff}
+.aw-copiar{background:#fff;color:var(--verde-escuro);border:1.5px solid var(--verde-rio)!important}
+.aw-fechar{background:transparent;color:var(--ink-soft);border:1.5px dashed var(--linha)!important;flex-basis:100%!important}
+.aviso-whats code{background:#fff;border:1px solid var(--linha);border-radius:6px;padding:1px 5px;font-size:12.5px;word-break:break-all}
 </style>
+
+<div class="aviso-whats hidden" id="avisoWhats" role="alert">
+  <div class="aw-titulo">⚠️ Ficha aberta pelo WhatsApp — o GPS não vai funcionar aqui</div>
+  <p id="awTexto">Aberta direto do WhatsApp, a ficha fica num modo em que o celular bloqueia a localização.</p>
+  <p id="awPassos"></p>
+  <div class="aw-acoes">
+    <a class="aw-abrir" id="awAbrir" href="https://eulisonmonteiro-rgb.github.io/ficha-busca-ativa/" target="_blank" rel="noopener">🌐 Abrir o app da ficha</a>
+    <button type="button" class="aw-copiar" id="awCopiar">📋 Copiar o link</button>
+    <button type="button" class="aw-fechar" id="awFechar">Continuar aqui mesmo assim (sem GPS)</button>
+  </div>
+</div>
 
 <header class="topo">
   <div class="orgao">Prefeitura de Oriximiná · SMAS · Departamento de Vigilância Socioassistencial</div>
@@ -2134,8 +2156,47 @@ $('btnCopiarLink').addEventListener('click', ()=>{
 document.addEventListener('change', ()=>{ aplicarGates(); atualizarPrioridade(); calcPerCapita(); autoSalvar(); });
 document.addEventListener('input', ()=>{ autoSalvar(); });
 
+/* ============ Aviso: ficha aberta pelo WhatsApp (ou como arquivo) ============ */
+const LINK_APP = 'https://eulisonmonteiro-rgb.github.io/ficha-busca-ativa/';
+function verificarAberturaWhatsApp(){
+  if(dentroDeVisualizador) return; // no claude.ai já existe o botão "Abrir em tela cheia"
+  const ua = navigator.userAgent || '';
+  const navegadorInterno = /WhatsApp|FBAN|FBAV|FB_IAB|Instagram/i.test(ua);
+  const comoArquivo = location.protocol === 'file:' || location.protocol === 'content:' || window.isSecureContext === false;
+  if(!navegadorInterno && !comoArquivo) return;
+  const android = /Android/i.test(ua);
+  const iphone = /iPhone|iPad|iPod/i.test(ua);
+  if(comoArquivo){
+    $('awTexto').textContent = 'A ficha foi aberta como arquivo (por exemplo, direto do WhatsApp). Nesse modo o celular bloqueia a localização e a ficha não pode ser instalada.';
+  } else {
+    $('awTexto').textContent = 'A ficha está aberta dentro do navegador do WhatsApp, que não libera a localização nem a instalação do app.';
+  }
+  if(android){
+    $('awPassos').innerHTML = 'Toque em <strong>Abrir o app da ficha</strong>. Se abrir de novo dentro do WhatsApp, toque em <strong>⋮ → Abrir no Chrome</strong> e depois em <strong>📲 Instalar app</strong>.';
+    // Pede ao Android para abrir no Chrome (se não houver Chrome, abre o link normal)
+    $('awAbrir').href = 'intent://eulisonmonteiro-rgb.github.io/ficha-busca-ativa/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(LINK_APP) + ';end';
+  } else if(iphone){
+    $('awPassos').innerHTML = 'Toque em <strong>Copiar o link</strong>, abra o <strong>Safari</strong>, cole na barra de endereço e depois toque em <strong>📲 Instalar app</strong>. (Dentro do WhatsApp também dá: toque no ícone de compartilhar ⬆︎ → <strong>Abrir no Safari</strong>.)';
+  } else {
+    $('awPassos').innerHTML = 'Abra o link no navegador: <code>' + LINK_APP + '</code>';
+  }
+  if(comoArquivo && Object.keys(lerFichas()).length){
+    $('awPassos').innerHTML += '<br><strong>Fichas já preenchidas neste modo:</strong> exporte em “🗂 Fichas salvas → Exportar todas” antes de trocar, pois elas não passam sozinhas para o app.';
+  }
+  $('avisoWhats').classList.remove('hidden');
+}
+$('awCopiar').addEventListener('click', ()=>{
+  try{ navigator.clipboard.writeText(LINK_APP).then(()=>toast('Link copiado — cole no navegador'), ()=>toast('Link: ' + LINK_APP)); }
+  catch(e){ toast('Link: ' + LINK_APP); }
+});
+$('awFechar').addEventListener('click', ()=>{
+  $('avisoWhats').classList.add('hidden');
+  toast('Sem GPS neste modo — use “📷 Extrair localização de uma foto” ou digite as coordenadas');
+});
+
 /* ============ Inicialização ============ */
 (function init(){
+  verificarAberturaWhatsApp();
   // Ajuda do GPS conforme o modo de uso: arquivo local (file://) ou versão publicada (https://)
   if(location.protocol === 'https:' || location.protocol === 'http:'){
     $('ajudaArquivo').classList.add('hidden');
